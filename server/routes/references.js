@@ -121,6 +121,6 @@ function create(ctx, path, kind, user, { name: rawName, listId }) {
     return newId;
   })();
   ctx.audit(kind.event, { user: user.username, name, ...(path === 'stores' && list?.is_multi === 1 ? { grouped: true } : {}), ...(path === 'aisles' && aisleStore !== null ? { store: db.prepare('SELECT name FROM stores WHERE id = ?').pluck().get(aisleStore) } : {}) });
-  ctx.events?.notifyReferences();
+  ctx.events?.notifyReferences({ lists: true });
   return { item: { id, name, active: true, ...(path === 'stores' ? { isMulti: false, storeIds: [] } : { storeId: aisleStore }) } };
 }

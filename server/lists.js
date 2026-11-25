@@ -191,6 +191,10 @@ export function canEdit(user, row) {
 
 // key : refus « Identifiant de liste invalide. » ('ops.identifiantListeInvalide'),
 // ou rien (élément d'une liste : mot neutre)
+// Opérations des listes (types qui commencent ainsi) : listes, articles,
+// « Acheté » (« À offrir »), « Souvent ajoutés »
+export const LIST_OPS = ['list.', 'item.', 'gift.', 'habitual.'];
+
 function requireUuid(value, key = 'ops.identifiantInvalide') {
   if (!isUuid(value)) throw new OpError(400, key);
   return value.toLowerCase();
@@ -1489,6 +1493,25 @@ export function createListService(ctx) {
     },
   };
 
+  // LE contrôle des listes (server/features.js, listsRefusal) : refus 403
+  // pour un compte qui ne les utilise pas (un invité sans « Listes »)
+  function requireLists(user) {
+    const refusal = features.listsRefusal(user.id);
+    if (refusal) throw new OpError(403, refusal);
+  }
+  // Toute opération des listes (listes, articles, « Acheté », « Souvent
+  // ajoutés ») : listes utilisées d'abord (docs/cadrage-comptes.md, étape
+  // 3 ; LE contrôle de server/features.js). Un invité sans Listes ne
+  // change rien des listes, même d'une liste dont il était membre : refus
+  // 403, avant tout traitement (rien n'est effacé).
+  for (const [type, handler] of Object.entries(handlers)) {
+    if (!LIST_OPS.some((prefix) => type.startsWith(prefix))) continue;
+    handlers[type] = (user, ...rest) => {
+      requireLists(user);
+      return handler(user, ...rest);
+    };
+  }
+
   // Opérations des notes (server/notes.js)
   for (const [type, handler] of Object.entries(notes.handlers)) handlers[type] = handler;
   // Opérations des projets (server/projects.js)
@@ -1566,8 +1589,10 @@ export function createListService(ctx) {
 
   // --- Lectures ---
 
-  // Mes listes, de la plus récemment active à la plus ancienne
+  // Mes listes, de la plus récemment active à la plus ancienne (aucune
+  // quand je n'utilise pas les listes : assistants IA, autorisation)
   function myLists(user) {
+    if (!features.listsUsed(user.id)) return [];
     return q.myLists.all(user.id)
       .sort((a, b) => b.last_activity.localeCompare(a.last_activity))
       .map((list) => describeList(list, user));
@@ -1577,7 +1602,7 @@ export function createListService(ctx) {
   // locale : langue de l'ordre alphabétique (celle de la requête ; Claude :
   // le français)
   function readList(user, listId, locale = 'fr') {
-    if (!isUuid(listId)) return null;
+    if (!isUuid(listId) || !features.listsUsed(user.id)) return null;
     const list = q.myLists.all(user.id).find((l) => l.id === listId.toLowerCase());
     if (!list) return null;
     const shopping = isShoppingList(list);
@@ -1625,6 +1650,14 @@ export function createListService(ctx) {
   function changesSince(user, since) {
     const serverTime = nowIso();
     const from = since ?? '';
+    // Listes non utilisées (un invité sans « Listes ») : rien de ce qui
+    // touche les listes (la copie du téléphone les oublie ; elles
+    // reviennent quand il les utilise de nouveau)
+    if (!features.listsUsed(user.id)) {
+      return syncBody(user, since, {
+        serverTime, lists: [], listIds: [], items: [], stores: [], aisles: [], history: [],
+      }, { reservations: {}, gifts: { reservedAt: {}, bought: [] } }, { lists: false });
+    }
     const lists = db.prepare(`
       SELECT lists.* FROM lists JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = ?
       WHERE lists.updated_at >= ?
@@ -1641,7 +1674,7 @@ export function createListService(ctx) {
     }
     // Résumés (articles restants, dernière activité) de mes listes actuelles
     const summaries = new Map(q.myLists.all(user.id).map((l) => [l.id, l]));
-    return {
+    return syncBody(user, since, {
       serverTime,
       lists: lists.map((list) => describeList({ remaining: 0, last_activity: list.updated_at, ...list, ...summaries.get(list.id) }, user)),
       listIds: [...summaries.keys()],
@@ -1651,19 +1684,7 @@ export function createListService(ctx) {
       aisles: q.allAisles.all().map(describeAisle),
       // (lignes utilisées, ou retirées de « Souvent ajoutés », depuis la dernière synchronisation)
       history: db.prepare('SELECT * FROM item_history WHERE last_used_at >= ? OR hidden_at >= ?').all(from, from).map(describeHistory),
-      // Mon annuaire (choix des personnes avec qui partager ; server/directory.js),
-      // gardé sur le téléphone pour ouvrir le formulaire de liste sans réseau
-      users: directory.directoryFor(user),
-      // Mes nouveautés, en entier à chaque synchronisation (server/news.js)
-      news: news.newsFor(user),
-      // Mon réglage « Accueil » (server/home.js), en entier à chaque synchronisation
-      home: home.homeFor(user.id),
-      // Mon réglage « Fonctions » (server/features.js), de même : les
-      // fonctions que j'utilise (autorisées et allumées)…
-      features: features.featuresFor(user.id),
-      // … et ce que l'Admin m'a autorisé (Réglages › Fonctions ne propose
-      // que cela ; « Nouveau projet », « Assistants IA »)
-      allowed: features.allowedFor(user.id),
+    }, {
       // Réservations des listes d'envies où ce compte a le droit de les voir,
       // en entier à chaque synchronisation (une libération disparaît donc
       // d'elle-même) ; jamais celles d'une liste dont il est le bénéficiaire
@@ -1672,6 +1693,32 @@ export function createListService(ctx) {
       // cours, la date de ma réservation et ma marque « Acheté » (jamais
       // celles d'un autre ; rien pour une liste dont je suis le bénéficiaire)
       gifts: reservations.giftsFor(user),
+    }, { lists: true });
+  }
+
+  // Réponse de la synchronisation, toujours dans le même ordre : head (les
+  // listes, articles, magasins, rayons et mémoire des articles), puis
+  // l'annuaire et les réglages, wishes (réservations et « À offrir »),
+  // puis notes, projets et page Notifications. lists : faux pour un compte
+  // sans Listes (ses nouveautés n'ont alors aucune liste).
+  function syncBody(user, since, head, wishes, { lists }) {
+    const myNews = news.newsFor(user);
+    return {
+      ...head,
+      // Mon annuaire (choix des personnes avec qui partager ; server/directory.js),
+      // gardé sur le téléphone pour ouvrir le formulaire de liste sans réseau
+      users: directory.directoryFor(user),
+      // Mes nouveautés, en entier à chaque synchronisation (server/news.js)
+      news: lists ? myNews : { ...myNews, lists: {} },
+      // Mon réglage « Accueil » (server/home.js), en entier à chaque synchronisation
+      home: home.homeFor(user.id),
+      // Mon réglage « Fonctions » (server/features.js), de même : les
+      // fonctions que j'utilise (autorisées et allumées)…
+      features: features.featuresFor(user.id),
+      // … et ce que l'Admin m'a autorisé (Réglages › Fonctions ne propose
+      // que cela ; « Nouveau projet », « Assistants IA »)
+      allowed: features.allowedFor(user.id),
+      ...wishes,
       // Notes que je vois, mes épingles et mes nouveautés (server/notes.js)
       ...notes.syncFor(user, since),
       // Projets que je vois, leurs cartes et mes réglages (server/projects.js ;
@@ -1730,6 +1777,10 @@ export function createListService(ctx) {
     for (const id of wanted) {
       if (current.has(id)) continue;
       if (!directory.canSee(user, id)) throw new OpError(400, 'ops.utilisateurInconnu');
+      // … et avoir les listes autorisées par l'Admin (un invité à qui
+      // l'Admin ne les a pas ouvertes ; docs/cadrage-comptes.md, étape 3) :
+      // refus nommé, il est dans mon annuaire (seul l'Admin voit un invité)
+      if (!features.allowedFor(id).lists) throw new OpError(400, 'ops.personneSansListes', { name: db.prepare('SELECT display_name FROM users WHERE id = ?').pluck().get(id) ?? '' });
     }
 
     const added = [...wanted].filter((id) => !current.has(id));

@@ -116,7 +116,7 @@ import { userLocale } from './locale.js';
 import { noteAccess } from './notes.js';
 import { noteTitle, noteExcerpt } from '../public/js/notes.js';
 import { projectAccess } from './projects.js';
-import { createFeatures } from './features.js';
+import { createFeatures, LISTS_NOT_ALLOWED } from './features.js';
 
 export const CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
 export const DEFAULT_SETTINGS = { changes: true, due: true, wishes: true, sharing: true, detail: false };
@@ -324,11 +324,19 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
   }
 
   // La personne peut-elle recevoir une notification de cette catégorie pour
-  // cette liste ? Renvoie la liste (telle qu'elle la voit) ou null.
+  // cette liste ? Renvoie la liste (telle qu'elle la voit) ou null. Listes
+  // non utilisées (un invité sans « Listes », docs/cadrage-comptes.md, étape
+  // 3 ; server/features.js) : rien, ni sur la page Notifications ni sur le
+  // téléphone, sauf « Partage » quand l'Admin les autorise et que la
+  // personne les a éteintes (l'invitation à les rallumer, comme pour les
+  // projets) ; listsOff : ce cas (ajouté à la liste rendue).
   function allowed(userId, listId, category, actorId = null) {
     if (userId === actorId) return null;                       // jamais l'auteur
     const list = q.memberList.get({ userId, listId });
     if (!list) return null;                                     // plus membre, compte inactif, liste supprimée
+    const refusal = features.listsRefusal(userId);
+    if (refusal === LISTS_NOT_ALLOWED) return null;              // pas autorisées : rien, pas même « Partage »
+    if (refusal && category !== 'sharing') return null;          // éteintes : seulement « Partage »
     if (!settingsOf(userId)[category]) return null;             // catégorie coupée
     if (q.muted.get(listId, userId)) return null;               // liste silencée
     if (list.type === 'wishes') {
@@ -339,7 +347,7 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
       if (category === 'wishes' && !seesReservations(userId, wish)) return null;
     }
     if (category === 'wishes' && list.type !== 'wishes') return null;
-    return list;
+    return refusal ? { ...list, listsOff: true } : list;
   }
 
   // --- Notes : réglages ---
@@ -860,16 +868,19 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
       targetType: 'list',
       targetId: listId,
     };
+    // Listes éteintes par la personne (invité) : l'invitation à les
+    // rallumer, qui ouvre Réglages › Fonctions
+    const off = list.listsOff === true;
     const message = () => (kind === 'added'
       ? buildMessage({
         title: translate(locale, 'alertes.partage.ajoute', { actor, list: list.name }),
-        body: translate(locale, canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
-        navigate: listUrl(listId), tag: `partage-${listId}`, locale,
+        body: translate(locale, off ? 'alertes.liste.allumer' : canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
+        navigate: off ? `${origin}/#/reglages/fonctions` : listUrl(listId), tag: `partage-${listId}`, locale,
       })
       : buildMessage({
         title: translate(locale, 'alertes.partage.droit', { list: list.name }),
-        body: translate(locale, canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
-        navigate: listUrl(listId), tag: `partage-${listId}`, locale,
+        body: translate(locale, off ? 'alertes.liste.allumer' : canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
+        navigate: off ? `${origin}/#/reglages/fonctions` : listUrl(listId), tag: `partage-${listId}`, locale,
       }));
     deliver(userId, entry, message);
   }
@@ -920,7 +931,8 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
       if (!q.claimDigest.run({ userId, day: today }).changes) continue;
       const settings = settingsOf(userId);
       if (!settings.due) continue;
-      const tasks = q.dueTasks.all({ userId, today });
+      // Tâches : seulement listes utilisées (un invité sans « Listes » : aucune)
+      const tasks = features.listsUsed(userId) ? q.dueTasks.all({ userId, today }) : [];
       // Cartes : seulement projets utilisés (autorisés et allumés)
       const cards = features.featuresFor(userId).projects ? q.dueCards.all({ userId, today }) : [];
       if (!tasks.length && !cards.length) continue;

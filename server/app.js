@@ -25,7 +25,7 @@ import { reservationRoutes } from './routes/reservations.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
 import { createEventHub, sameSiteOnly } from './events.js';
 import { createDirectory } from './directory.js';
-import { createFeatures } from './features.js';
+import { createFeatures, requireLists, LIST_ROUTE_PATHS } from './features.js';
 import { createSaveCounter } from './notes.js';
 import { PROJECT_CREATIONS_PER_HOUR, COMMENTS_PER_HOUR } from '../public/js/projects.js';
 import { createShareService, createPublicAccess } from './shares.js';
@@ -314,6 +314,12 @@ export function createApp({
   api.use(requirePasswordChanged);
   api.use(logoutRoute(ctx));
   api.use(meRoutes(ctx));
+  // Listes non utilisées par ce compte (un invité sans « Listes »,
+  // docs/cadrage-comptes.md, étape 3) : toutes les routes des listes et de
+  // ce qui en dépend (articles, photos, réservations, lien public, mode
+  // scan, suggestions, magasins et rayons, sourdine d'une liste) répondent
+  // 403 avant tout traitement. Un seul contrôle (server/features.js).
+  api.use(LIST_ROUTE_PATHS, requireLists(ctx));
   api.use(listRoutes(ctx));
   api.use(productRoutes(ctx)); // mode scan (après listRoutes : utilise ctx.lists)
   api.use(referenceRoutes(ctx)); // nouveau magasin ou rayon (après listRoutes : utilise ctx.lists)

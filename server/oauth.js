@@ -482,7 +482,9 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
       redirect: { host: grant.redirect_host, local: grant.redirect_host === 'localhost' || grant.redirect_host === '127.0.0.1' },
       access: accessOf(grant.scope.split(' ')),
       allLists: grant.all_lists === 1,
-      lists: grant.all_lists === 1 ? [] : q.grantListNames.all(user.id, grant.id),
+      // (aucun nom de liste pour un compte qui ne les utilise pas : un
+      // invité sans « Listes », docs/cadrage-comptes.md, étape 3)
+      lists: grant.all_lists === 1 || ctx.features?.listsUsed(user.id) === false ? [] : q.grantListNames.all(user.id, grant.id),
       createdAt: grant.created_at,
       lastUsedAt: grant.last_used_at,
     }));

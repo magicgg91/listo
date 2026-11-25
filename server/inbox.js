@@ -51,7 +51,7 @@ import { wishListOf, beneficiaryId } from '../public/js/wishes.js';
 import { userLocale } from './locale.js';
 import { noteAccess } from './notes.js';
 import { projectAccess } from './projects.js';
-import { createFeatures } from './features.js';
+import { createFeatures, LISTS_NOT_ALLOWED } from './features.js';
 
 export const INBOX_DAYS = 30;
 export const INBOX_MAX = 300;
@@ -111,7 +111,7 @@ export function mergeParams(old, next) {
 // card, column : le projet, la carte et la colonne tels que la personne
 // les voit encore (ou null), relus de même ; projectsOff : elle a coupé
 // les projets.
-export function renderRow(textKey, params, category, locale, { note = null, project = null, card = null, column = null, projectsOff = false } = {}) {
+export function renderRow(textKey, params, category, locale, { note = null, project = null, card = null, column = null, projectsOff = false, listsOff = false } = {}) {
   const p = params && typeof params === 'object' ? params : {};
   const label = translate(locale, CATEGORY_LABELS[category] ?? CATEGORY_LABELS.changes);
   const withContext = (context) => (context ? translate(locale, 'inbox.sous', { label, context }) : label);
@@ -154,10 +154,11 @@ export function renderRow(textKey, params, category, locale, { note = null, proj
       };
     }
     // Partage d'une liste : ajouté, ou droit changé
+    // (listes éteintes par la personne : l'invitation à les rallumer)
     case 'list.shared':
-      return { kind: 'sharing', text: translate(locale, 'inbox.partage.liste', { actor: text(p.actor, 100) || translate(locale, 'alertes.quelquun'), list }), sub: label };
+      return { kind: 'sharing', text: translate(locale, 'inbox.partage.liste', { actor: text(p.actor, 100) || translate(locale, 'alertes.quelquun'), list }), sub: listsOff ? translate(locale, 'alertes.liste.allumer') : label };
     case 'list.access':
-      return { kind: 'sharing', text: translate(locale, p.access === 'modification' ? 'inbox.droit.liste.modification' : 'inbox.droit.liste.lecture', { list }), sub: label };
+      return { kind: 'sharing', text: translate(locale, p.access === 'modification' ? 'inbox.droit.liste.modification' : 'inbox.droit.liste.lecture', { list }), sub: listsOff ? translate(locale, 'alertes.liste.allumer') : label };
     // Partage d'une note
     case 'note.shared': {
       const actor = text(p.actor, 100) || translate(locale, 'alertes.quelquun');
@@ -377,11 +378,20 @@ export function createInbox(ctx) {
     switch (row.target_type) {
       case 'deadlines': return { target: { type: 'deadlines' } };
       case 'list': {
+        // Listes non utilisées (un invité sans « Listes », docs/cadrage-
+        // comptes.md, étape 3) : rien, sauf la ligne « Partage » quand
+        // l'Admin les autorise (l'invitation à les rallumer, qui ouvre
+        // Réglages › Fonctions)
+        const refusal = features.listsRefusal(user.id);
+        if (refusal && (refusal === LISTS_NOT_ALLOWED || row.category !== 'sharing')) return { hidden: true };
         const list = id ? q.list.get({ userId: user.id, id }) : null;
         if (list && hiddenFor(user, list, row)) return { hidden: true };
+        if (refusal) return { target: list ? { type: 'features' } : null, listsOff: true };
         return { target: list ? { type: 'list', listId: list.id } : null };
       }
       case 'item': {
+        // Listes non utilisées : la ligne d'un article n'est pas envoyée
+        if (!features.listsUsed(user.id)) return { hidden: true };
         const item = id ? q.item.get({ userId: user.id, id }) : null;
         if (item && hiddenFor(user, item, row)) return { hidden: true };
         return { target: item ? { type: 'item', itemId: item.id, listId: item.list_id } : null };
@@ -451,9 +461,9 @@ export function createInbox(ctx) {
       const row = stored.text_key === 'project.assigned' && Array.isArray(params.cards) && params.cards.length > 1 && typeof params.project === 'string'
         ? { ...stored, target_type: 'project', target_id: params.project }
         : stored;
-      const { target, note = null, hidden = false, project = null, card = null, column = null, projectsOff = false } = resolve(user, row);
+      const { target, note = null, hidden = false, project = null, card = null, column = null, projectsOff = false, listsOff = false } = resolve(user, row);
       if (hidden) continue;
-      const rendered = renderRow(row.text_key, params, row.category, locale, { note, project, card, column, projectsOff });
+      const rendered = renderRow(row.text_key, params, row.category, locale, { note, project, card, column, projectsOff, listsOff });
       out.push({
         id: row.num,
         category: row.category,

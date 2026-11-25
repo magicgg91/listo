@@ -264,7 +264,7 @@ export function adminNameRoutes(ctx) {
       }
     })();
     // Après l'écriture : les téléphones connectés relisent la mémoire des noms
-    ctx.events?.notifyReferences();
+    ctx.events?.notifyReferences({ lists: true });
     audit('name_aisle_changed', { admin: req.user.username, name: displayNameOf(lines), aisle: aisle?.name ?? 'none', ip: req.ip });
     res.json({ aisleId: aisle?.id ?? null, aisle: aisle?.name ?? null });
   });

@@ -21,7 +21,8 @@
 // Réponses construites champ par champ : id et nom affiché, plus le rôle
 // pour un Admin seulement ; jamais l'identifiant de connexion (username),
 // qui ne sert qu'à se connecter. Depuis l'étape 2 (fonctions autorisées),
-// aussi « uses » : { notes, projects }, ce que l'Admin a autorisé à ce
+// aussi « uses » : { lists, notes, projects } (lists depuis l'étape 3 :
+// toujours vrai, sauf pour un invité vu par un Admin), ce que l'Admin a autorisé à ce
 // compte (pas ce qu'il a allumé, qui reste à lui) : la feuille « Partager »
 // d'une note ou d'un projet grise une personne qui n'y a pas droit
 // (« N'utilise pas les notes »), et le serveur refuse de l'ajouter. Ce
@@ -34,7 +35,7 @@ import { compareText } from '../public/js/i18n.js';
 import { allowedFromRow } from './features.js';
 
 export function createDirectory(db) {
-  const actives = db.prepare('SELECT id, display_name, role, guest, notes_allowed, projects_allowed FROM users WHERE active = 1');
+  const actives = db.prepare('SELECT id, display_name, role, guest, lists_allowed, notes_allowed, projects_allowed FROM users WHERE active = 1');
   const account = db.prepare('SELECT id, role, guest, active FROM users WHERE id = ?');
 
   // Annuaire de viewer (sa ligne de la table users, ou au moins id, role,
@@ -46,7 +47,7 @@ export function createDirectory(db) {
     const admin = viewerRole === 'admin';
     const uses = (row) => {
       const allowed = allowedFromRow(row);
-      return { notes: allowed.notes, projects: allowed.projects };
+      return { lists: allowed.lists, notes: allowed.notes, projects: allowed.projects };
     };
     return actives.all()
       .filter((row) => directorySees(viewerRole, accountRole(row)))

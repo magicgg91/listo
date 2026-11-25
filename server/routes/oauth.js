@@ -227,6 +227,9 @@ export function oauthConsentRoutes(ctx) {
       confirmWith: req.sessionMethod === 'oidc' && ctx.oidc ? 'authelia' : 'password',
       confirmed: req.sessionMethod === 'oidc' && ctx.oidc ? ctx.oidc.confirmed(request.id, req.user.id) : false,
       lists,
+      // Listes utilisées par ce compte (un invité sans « Listes » : l'écran
+      // ne propose pas « Certaines listes », docs/cadrage-comptes.md, 4.3)
+      listsUsed: ctx.features.listsUsed(req.user.id),
     });
   });
 

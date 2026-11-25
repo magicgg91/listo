@@ -165,30 +165,23 @@ export function listRoutes(ctx) {
     if (!Array.isArray(ops) || ops.length === 0 || ops.length > MAX_OPS_PER_BATCH) {
       return res.status(400).json({ error: req.t('ops.lotInvalide', { max: MAX_OPS_PER_BATCH }) });
     }
-    // Plafond des enregistrements de notes (server/notes.js) : tout le lot
-    // est refusé (429) et rien n'est appliqué ; le téléphone le garde en file
-    // et le renvoie plus tard (une opération refusée une à une serait perdue)
-    const saves = ops.filter((op) => NOTE_SAVES.includes(op?.type)).length;
-    if (saves && !ctx.noteSaves.take(req.user.id, saves)) {
-      return res.status(429).json({ error: req.t('ops.notesTropVite') });
-    }
-    // Plafond des créations et duplications de projets (20 par heure) : de
-    // même, tout le lot est refusé et reste en file
-    const creations = ops.filter((op) => PROJECT_CREATIONS.includes(op?.type)).length;
-    if (creations && !ctx.projectCreations.take(req.user.id, creations)) {
-      return res.status(429).json({ error: req.t('ops.projetsTropVite') });
-    }
-    // Plafond des enregistrements de la description des cartes (et des
-    // cases cochées) : comme les notes, tout le lot reste en file
-    const cardSaves = ops.filter((op) => CARD_SAVES.includes(op?.type)).length;
-    if (cardSaves && !ctx.cardSaves.take(req.user.id, cardSaves)) {
-      return res.status(429).json({ error: req.t('ops.cartesTropVite') });
-    }
-    // Plafond des commentaires des cartes (120 par heure) : de même
-    const commentWrites = ops.filter((op) => COMMENT_WRITES.includes(op?.type)).length;
-    if (commentWrites && !ctx.commentWrites.take(req.user.id, commentWrites)) {
-      return res.status(429).json({ error: req.t('ops.commentairesTropVite') });
-    }
+    // Plafonds par personne : enregistrements de notes (server/notes.js),
+    // créations et duplications de projets (20 par heure), enregistrements de
+    // la description des cartes et des cases cochées, commentaires des cartes
+    // (120 par heure). Un seul plafond dépassé et tout le lot est refusé (429)
+    // sans rien appliquer ; le téléphone le garde en file et le renvoie plus
+    // tard (une opération refusée une à une serait perdue). Tous les plafonds
+    // sont d'abord vérifiés, puis seulement pris : un lot refusé n'use rien.
+    const counted = (types) => ops.filter((op) => types.includes(op?.type)).length;
+    const limits = [
+      [ctx.noteSaves, counted(NOTE_SAVES), 'ops.notesTropVite'],
+      [ctx.projectCreations, counted(PROJECT_CREATIONS), 'ops.projetsTropVite'],
+      [ctx.cardSaves, counted(CARD_SAVES), 'ops.cartesTropVite'],
+      [ctx.commentWrites, counted(COMMENT_WRITES), 'ops.commentairesTropVite'],
+    ].filter(([, n]) => n > 0);
+    const over = limits.find(([counter, n]) => !counter.can(req.user.id, n));
+    if (over) return res.status(429).json({ error: req.t(over[2]) });
+    for (const [counter, n] of limits) counter.take(req.user.id, n);
     res.json({ results: service.applyOps(req.user, ops).map((result) => localized(req, result)) });
   });
 

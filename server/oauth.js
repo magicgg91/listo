@@ -298,8 +298,12 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   // l'appelant (listes dont le compte est membre). Renvoie l'adresse de retour.
   function approve(request, user, { scope, allLists, listIds }, ip) {
     // Compte sans « Assistants IA » (case de l'Admin) : jamais de connexion
-    // (l'écran le dit avant ; revérifié ici, au moment d'écrire)
-    if (!allowedFromRow(user).mcp) {
+    // (l'écran le dit avant ; revérifié ici, au moment d'écrire, sur sa
+    // ligne relue en base : la vérification du mot de passe, juste avant,
+    // laisse la main, et l'Admin a pu décocher la case ou désactiver le
+    // compte entre-temps)
+    const fresh = q.user.get(user.id);
+    if (!fresh || fresh.active !== 1 || !allowedFromRow(fresh).mcp) {
       const error = new OAuthError(403, 'access_denied', translate('fr', 'autorisation.compteNonAutorise'));
       error.key = 'autorisation.compteNonAutorise';
       throw error;

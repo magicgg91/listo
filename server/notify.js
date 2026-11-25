@@ -53,7 +53,13 @@
 //   tâches non cochées, échéance aujourd'hui ou passée ; les miennes et
 //   celles de personne, jamais celles attribuées à quelqu'un d'autre (si
 //   l'attribution est activée pour la liste). Avec le détail, l'heure suit
-//   le nom (« Plombier (14:00) »).
+//   le nom (« Plombier (14:00) »). Les cartes des projets où la personne a
+//   allumé « Afficher dans Échéances » comptent aussi (étape 4 du cadrage
+//   des projets : les siennes et celles de personne, pas faites ; jamais
+//   projets coupés ni projet dont elle a coupé les notifications), pour
+//   que le nombre soit celui de l'écran Échéances et de ses pastilles ;
+//   avec des cartes, « 3 échéances aujourd'hui » et le message ouvre
+//   l'écran Échéances.
 // - e) rappel d'une tâche à heure précise (même catégorie 'due', décisions
 //   du 11 novembre 2026) : le délai est choisi tâche par tâche (à l'heure,
 //   15 min, 30 min, 1 h, 2 h avant, ou la veille). Une notification par
@@ -211,6 +217,24 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
           OR (items.assign_mode <> 'all' AND (items.assigned_to IS NULL OR items.assigned_to = :userId)))
         AND NOT EXISTS (SELECT 1 FROM push_list_mutes WHERE push_list_mutes.list_id = lists.id AND push_list_mutes.user_id = :userId)
       ORDER BY items.due_date, COALESCE(items.due_time, '99:99'), items.name COLLATE NOCASE`),
+    // Cartes des projets montrés dans Échéances (étape 4 du cadrage des
+    // projets, section 8), relues de même : projets allumés pour ce compte,
+    // projet présent dont il est propriétaire ou membre, « Afficher dans
+    // Échéances » allumé par lui, notifications du projet non coupées ;
+    // carte présente, pas faite, échéance aujourd'hui ou passée, attribuée
+    // à lui ou à personne (comme « Les miennes » et les pastilles de
+    // l'écran Échéances, public/js/deadlines.js)
+    dueCards: db.prepare(`SELECT cards.id, cards.title AS name, cards.due_date, cards.due_time, projects.id AS project_id, projects.name AS project_name
+      FROM cards
+      JOIN projects ON projects.id = cards.project_id AND projects.deleted_at IS NULL
+      JOIN users ON users.id = :userId AND users.projects_enabled = 1
+      JOIN project_user_state ON project_user_state.project_id = projects.id AND project_user_state.user_id = :userId
+        AND project_user_state.in_deadlines = 1 AND project_user_state.muted_push = 0
+      WHERE (projects.owner_id = :userId OR EXISTS (SELECT 1 FROM project_members WHERE project_members.project_id = projects.id AND project_members.user_id = :userId))
+        AND cards.deleted_at IS NULL AND cards.due_done = 0 AND cards.due_date IS NOT NULL AND cards.due_date <> '' AND cards.due_date <= :today
+        AND (NOT EXISTS (SELECT 1 FROM card_assignees WHERE card_assignees.card_id = cards.id)
+          OR EXISTS (SELECT 1 FROM card_assignees WHERE card_assignees.card_id = cards.id AND card_assignees.user_id = :userId))
+      ORDER BY cards.due_date, COALESCE(cards.due_time, '99:99'), cards.title COLLATE NOCASE`),
     // Rappels : tâches à faire avec date, heure et délai, autour d'aujourd'hui
     // (le moment exact est calculé ensuite, en heure locale du serveur)
     reminderTasks: db.prepare(`SELECT items.id, items.name, items.due_date, items.due_time, items.remind_before, items.assigned_to, items.assign_mode, items.assign_people,
@@ -843,18 +867,31 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
   }
 
   // --- b) Résumé quotidien des échéances ---
-  function digestMessage(tasks, today, detail, locale) {
-    const dueToday = tasks.filter((t) => t.due_date === today).length;
-    const late = tasks.length - dueToday;
+  // tasks : les tâches ; cards : les cartes des projets montrés dans
+  // Échéances (étape 4 du cadrage des projets). Sans carte, le message est
+  // celui d'avant (« 3 tâches à faire aujourd'hui »).
+  function digestMessage(tasks, cards, today, detail, locale) {
+    const all = [...tasks, ...cards];
+    const dueToday = all.filter((t) => t.due_date === today).length;
+    const late = all.length - dueToday;
+    const mixed = cards.length > 0;
     const parts = [];
-    if (dueToday) parts.push(translate(locale, 'alertes.echeances.aujourdhui', { count: dueToday }));
-    if (late) parts.push(translate(locale, dueToday ? 'alertes.echeances.retard' : 'alertes.echeances.retard.seules', { count: late }));
+    if (dueToday) parts.push(translate(locale, mixed ? 'alertes.echeances.aujourdhui.cartes' : 'alertes.echeances.aujourdhui', { count: dueToday }));
+    if (late) parts.push(translate(locale, dueToday ? 'alertes.echeances.retard' : mixed ? 'alertes.echeances.retard.seules.cartes' : 'alertes.echeances.retard.seules', { count: late }));
     const lists = [...new Map(tasks.map((t) => [t.list_id, t.list_name])).entries()];
-    const body = detail
-      ? nameList(locale, tasks.map((t) => (t.due_time ? translate(locale, 'alertes.echeances.heure', { name: t.name, time: timeLabel(t.due_time, { locale }) }) : t.name))) // les plus en retard d'abord
-      : (lists.length === 1 ? translate(locale, 'alertes.dans', { list: lists[0][1] }) : translate(locale, 'alertes.dansListes', { count: lists.length }));
-    // Une seule liste : on l'ouvre ; plusieurs : « Mes listes »
-    const navigate = lists.length === 1 ? listUrl(lists[0][0]) : `${origin}/#/listes`;
+    const projects = [...new Map(cards.map((c) => [c.project_id, c.project_name])).entries()];
+    // Avec le détail : les noms, les plus en retard d'abord (tâches et cartes mêlées)
+    const named = mixed
+      ? all.slice().sort((a, b) => a.due_date.localeCompare(b.due_date) || (a.due_time ?? '99:99').localeCompare(b.due_time ?? '99:99'))
+      : tasks;
+    let body;
+    if (detail) body = nameList(locale, named.map((t) => (t.due_time ? translate(locale, 'alertes.echeances.heure', { name: t.name, time: timeLabel(t.due_time, { locale }) }) : t.name)));
+    else if (!mixed) body = lists.length === 1 ? translate(locale, 'alertes.dans', { list: lists[0][1] }) : translate(locale, 'alertes.dansListes', { count: lists.length });
+    else if (!lists.length && projects.length === 1) body = translate(locale, 'alertes.carte.dansProjet', { project: projects[0][1] });
+    else body = translate(locale, 'alertes.echeances.dansListesProjets', { count: lists.length + projects.length });
+    // Une seule liste (sans carte) : on l'ouvre ; plusieurs : « Listes » ;
+    // avec des cartes : l'écran Échéances, qui les montre toutes
+    const navigate = mixed ? `${origin}/#/echeances` : lists.length === 1 ? listUrl(lists[0][0]) : `${origin}/#/listes`;
     return buildMessage({ title: parts.join(' · '), body, navigate, tag: 'echeances', locale });
   }
 
@@ -876,11 +913,14 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
       const settings = settingsOf(userId);
       if (!settings.due) continue;
       const tasks = q.dueTasks.all({ userId, today });
-      if (!tasks.length) continue;
-      const dueToday = tasks.filter((task) => task.due_date === today).length;
-      const entry = { category: 'due', textKey: 'digest', params: { today: dueToday, late: tasks.length - dueToday }, targetType: 'deadlines' };
+      const cards = q.dueCards.all({ userId, today });
+      if (!tasks.length && !cards.length) continue;
+      const dueToday = [...tasks, ...cards].filter((task) => task.due_date === today).length;
+      // (les nombres seulement : ni nom de tâche, ni titre de carte en base)
+      const params = { today: dueToday, late: tasks.length + cards.length - dueToday, ...(cards.length ? { cards: cards.length } : {}) };
+      const entry = { category: 'due', textKey: 'digest', params, targetType: 'deadlines' };
       // Hors plafond horaire, comme avant (une fois par jour)
-      work.push(deliver(userId, entry, () => digestMessage(tasks, today, settings.detail, localeOf(userId)), { ttl, cap: false }));
+      work.push(deliver(userId, entry, () => digestMessage(tasks, cards, today, settings.detail, localeOf(userId)), { ttl, cap: false }));
     }
     await Promise.all(work);
   }

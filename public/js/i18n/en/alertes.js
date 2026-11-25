@@ -90,6 +90,10 @@ export default {
   'alertes.echeances.heure': '{name} ({time})',
   'alertes.dans': 'In “{list}”',
   'alertes.dansListes': 'In {count} lists',
+  // Avec des cartes des projets montrés dans Échéances (étape 4 du cadrage des projets)
+  'alertes.echeances.aujourdhui.cartes': { one: '{count} item due today', other: '{count} items due today' },
+  'alertes.echeances.retard.seules.cartes': { one: '{count} overdue item', other: '{count} overdue items' },
+  'alertes.echeances.dansListesProjets': 'In {count} lists and projects',
 
   // e) Rappel d'une tâche (sans le détail : titre)
   'alertes.rappel.aujourdhui': 'Reminder: a task today at {time}',

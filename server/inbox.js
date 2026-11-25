@@ -184,12 +184,14 @@ export function renderRow(textKey, params, category, locale, { note = null, proj
       return { kind: 'wishes', text: sentence, sub: withContext(list) };
     }
     // Résumé du matin : « 3 tâches à faire aujourd'hui · 1 en retard »
+    // (avec des cartes des projets, étape 4 : « 3 échéances aujourd'hui »)
     case 'digest': {
       const today = count(p.today);
       const late = count(p.late);
+      const mixed = count(p.cards) > 0;
       const parts = [];
-      if (today) parts.push(translate(locale, 'alertes.echeances.aujourdhui', { count: today }));
-      if (late) parts.push(translate(locale, today ? 'alertes.echeances.retard' : 'alertes.echeances.retard.seules', { count: late }));
+      if (today) parts.push(translate(locale, mixed ? 'alertes.echeances.aujourdhui.cartes' : 'alertes.echeances.aujourdhui', { count: today }));
+      if (late) parts.push(translate(locale, today ? 'alertes.echeances.retard' : mixed ? 'alertes.echeances.retard.seules.cartes' : 'alertes.echeances.retard.seules', { count: late }));
       return { kind: 'digest', text: parts.join(' · '), sub: translate(locale, 'inbox.resume') };
     }
     // Rappel d'une tâche : « Dentiste à 9:15 », « … demain à 9:15 », « … le 12/11/2026 à 9:15 »

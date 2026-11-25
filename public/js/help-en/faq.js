@@ -44,6 +44,7 @@ export default {
         '“Too many attempts”: 5 wrong passwords block signing in for 15 minutes. Wait, or the person who runs the server restarts Listo (`docker compose restart`).',
         '“Request rejected: unknown origin.”: the address you typed isn\'t exactly the one in `LISTO_PUBLIC_URL` (another subdomain, `http` instead of `https`) ([[dossier]]).',
         'Forgotten password, lost phone: [[oubli]].',
+        '“This account signs in with” followed by the provider\'s name: the Admin chose “… only” for your account; use “Sign in with …” ([[sso]]).',
         'Offline mode or installing on the home screen doesn\'t work: Listo isn\'t opened over HTTPS. Always go through `https://listo.exemple.fr`, never through `http://IP:13300`.',
       ] }],
     },

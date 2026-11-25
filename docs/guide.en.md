@@ -583,6 +583,8 @@ The Listo server must reach the provider at its public address (`LISTO_OIDC_ISSU
 
 To get in ONLY through the provider, add `LISTO_LOCAL_LOGIN=off` ([3.3 Settings (variables)](#variables)): the sign-in screen only shows “Sign in with …”, password sign-in is refused and sessions opened with a password are closed; in Administration, “Add account” no longer asks for a password (the person gets in through the provider, with the same username). If the provider is down, nobody can get in: remove the line (or set it to `on`), then run `docker compose up -d`, to get password sign-in back.
 
+To require the provider for some accounts only, without `LISTO_LOCAL_LOGIN=off`: the Admin chooses “… only” in the “Sign-in” section of their page ([8.1 Admin](#role-admin)); the others keep “Password or …”. An “… only” account can no longer sign in with its Listo password, its sessions opened with a password are closed right away, and neither the person nor the Admin can change or reset its password any more. An account created from an account request gets it automatically. Listo always keeps at least one active Admin who signs in with a password: they can still get in if the provider is down, switch the accounts concerned back to “Password or …” and give them a temporary password (“Reset password”). As a last resort, the rescue command ([4.9 Lost Admin account](#secours)) also switches the account back to “Password or …”.
+
 > **Warning**: The account at the provider opens the Listo account that has the same username (case doesn't matter): create the accounts there with the Listo usernames. On first sign-in, Listo remembers that account: a different account with the same name, later on, is refused (the Admin can use “Unlink … account”, in Administration › Accounts).
 
 <a id="comptes"></a>
@@ -611,7 +613,8 @@ The Admin goes to Settings, “Administration”, “Accounts” tab, “Add acc
 - “Allowed features”: what the account can use, ticked according to the role (everything for a user, nothing for a guest) ([4.3 Account roles: Admin, User, Guest](#roles-comptes));
 - “Username”: what the person will type to sign in;
 - “Display name (optional)”: the first name shown to the others (‘Added by Marie’);
-- “Temporary password”: to give to the person; they'll replace it the first time they sign in.
+- “Sign-in” (only with an identity provider, [3.10 Sign-in with an identity provider (optional)](#sso-serveur)): “Password or …” (the default, guests included) or “… only”: the person will get in through the provider, with the same username, without a Listo password;
+- “Temporary password”: to give to the person; they'll replace it the first time they sign in. Not asked for an “… only” account.
 
 <a id="roles-comptes"></a>
 
@@ -679,7 +682,7 @@ The Listo icon appears. When you open it from the home screen, Listo shows full 
 
 ### 4.6 Changing your password
 
-Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([9.10 See and disconnect an AI assistant](#claude-connexions)).
+Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([9.10 See and disconnect an AI assistant](#claude-connexions)). When you're signed in through an identity provider, or with an “… only” account, “My account” has neither “Password” nor “Two-factor authentication”: they're managed at the provider ([4.10 Signing in with an identity provider](#sso)).
 
 <a id="double-auth"></a>
 
@@ -725,6 +728,8 @@ A temporary password is shown once: sign in with it, then choose a new one. If t
 If the server offers it, the sign-in screen also shows “Sign in with …”, followed by the name chosen by the Admin (Authelia, Authentik, Pocket ID…; “SSO” if they didn't choose one). Tap it and sign in with that provider: you come back to Listo, signed in. Your account with the provider opens the Listo account that has the same username. Your Listo username and password still work. If the Admin had given you a temporary password, it's erased the first time you sign in through the provider.
 
 When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing an AI assistant is then also confirmed with the provider ([9.9 Connect an AI assistant](#claude-connecter)).
+
+The Admin can reserve your account for the provider: “… only”. You then get in only with “Sign in with …”; with your Listo password, even the right one, the screen answers “This account signs in with” followed by the provider's name, and doesn't sign you in. “My account” has neither “Password” nor “Two-factor authentication”. If the provider is down, ask the Admin ([3.10 Sign-in with an identity provider (optional)](#sso-serveur)).
 
 No Listo account yet: “Your account request has been sent to the Admin”. The Admin sees it in Settings, “Administration” (badge), “Accounts” tab, “Account request” section: “Accept” (they can correct the username and name, and choose the role), or “Decline”. Once it's accepted, sign in again through the provider. A declined request can't be made again for 30 days.
 
@@ -1392,9 +1397,10 @@ Settings, “Administration” (visible only to an Admin).
 **“Accounts” tab**
 
 - “Add account” ([4.2 Creating the other accounts](#creer-comptes)).
-- The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”, or “Lists, Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status.
+- The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”, or “Lists, Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status; and “… only” for an account that signs in with the identity provider only.
 - An account's ⋮ button: its page, with its “Role” and its “Allowed features” ([4.3 Account roles: Admin, User, Guest](#roles-comptes)), and its “Security”: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used (an account that owns a project, is a member of one or wrote in one has been used).
 - Role: “User”, “Guest” or “Admin”. There's always at least one active Admin.
+- “Sign-in” (only with an identity provider, [3.10 Sign-in with an identity provider (optional)](#sso-serveur)): “Password or …” (the default) or “… only” (…: the provider's name). Switching to “… only” asks for confirmation and signs out their devices signed in with a password right away; “Reset password” goes away. For an “… only” account that has never signed in through the provider, the page says so: the person will need to use the same username there. The choice is greyed out, with its reason, for your own account (another Admin changes it), for the last Admin who signs in with a password (they keep it, to get in if the provider is down), and when password sign-in is disabled on the server (`LISTO_LOCAL_LOGIN=off`: everyone is already “… only”).
 
 **“Shopping” tab**
 
@@ -1812,6 +1818,7 @@ The proxy is holding back the real-time messages ([3.4 What the proxy must do](#
 - “Too many attempts”: 5 wrong passwords block signing in for 15 minutes. Wait, or the person who runs the server restarts Listo (`docker compose restart`).
 - “Request rejected: unknown origin.”: the address you typed isn't exactly the one in `LISTO_PUBLIC_URL` (another subdomain, `http` instead of `https`) ([3.2 The folder and docker-compose.yml](#dossier)).
 - Forgotten password, lost phone: [4.8 Forgotten password, lost phone](#oubli).
+- “This account signs in with” followed by the provider's name: the Admin chose “… only” for your account; use “Sign in with …” ([4.10 Signing in with an identity provider](#sso)).
 - Offline mode or installing on the home screen doesn't work: Listo isn't opened over HTTPS. Always go through `https://listo.exemple.fr`, never through `http://IP:13300`.
 
 <a id="faq-double-auth"></a>

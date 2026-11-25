@@ -583,6 +583,8 @@ Le serveur Listo doit joindre le fournisseur à son adresse publique (`LISTO_OID
 
 Pour n'entrer QUE par le fournisseur, ajoutez `LISTO_LOCAL_LOGIN=off` ([3.3 Les réglages (variables)](#variables)) : l'écran de connexion ne montre plus que « Se connecter avec … », la connexion par mot de passe est refusée et les sessions ouvertes par mot de passe sont fermées ; dans l'Administration, « Ajouter un compte » ne demande plus de mot de passe (la personne entre par le fournisseur, même identifiant). Si le fournisseur est en panne, plus personne n'entre : retirez la ligne (ou mettez `on`), puis `docker compose up -d`, pour retrouver la connexion par mot de passe.
 
+Pour n'imposer le fournisseur qu'à certains comptes, sans `LISTO_LOCAL_LOGIN=off` : l'Admin choisit « … seulement » dans la section « Connexion » de leur page ([8.1 Admin](#role-admin)) ; les autres gardent « Mot de passe ou … ». Un compte « … seulement » ne se connecte plus avec son mot de passe Listo, ses sessions ouvertes par mot de passe sont fermées tout de suite, et ni lui ni l'Admin ne peuvent plus changer ou réinitialiser son mot de passe. Un compte créé à partir d'une demande de compte l'est d'office. Listo garde toujours au moins un Admin actif qui se connecte avec son mot de passe : il entre encore si le fournisseur est en panne, remet les comptes concernés sur « Mot de passe ou … » et leur donne un mot de passe provisoire (« Réinitialiser le mot de passe »). En dernier recours, la commande de secours ([4.9 Compte Admin perdu](#secours)) remet aussi le compte sur « Mot de passe ou … ».
+
 > **Attention** : Le compte chez le fournisseur ouvre le compte Listo qui porte le même identifiant (majuscules ignorées) : créez-y les comptes avec les identifiants de Listo. À la première connexion, Listo retient ce compte : un autre compte du même nom, plus tard, est refusé (l'Admin peut « Délier le compte … », dans Administration › Comptes).
 
 <a id="comptes"></a>
@@ -611,7 +613,8 @@ L'Admin : Réglages, « Administration », onglet « Comptes », « Ajouter un c
 - « Fonctions autorisées » : ce que le compte peut utiliser, cochées selon le rôle (tout pour un utilisateur, rien pour un invité) ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)) ;
 - « Identifiant » : ce que la personne tapera pour se connecter ;
 - « Nom affiché (facultatif) » : le prénom montré aux autres (“Ajouté par Marie”) ;
-- « Mot de passe provisoire » : à transmettre à la personne ; elle le remplacera à sa première connexion.
+- « Connexion » (seulement avec un fournisseur d'identité, [3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)) : « Mot de passe ou … » (au départ, invité compris) ou « … seulement » : la personne entrera avec le fournisseur, même identifiant, sans mot de passe Listo ;
+- « Mot de passe provisoire » : à transmettre à la personne ; elle le remplacera à sa première connexion. Pas demandé pour un compte « … seulement ».
 
 <a id="roles-comptes"></a>
 
@@ -679,7 +682,7 @@ L'icône Listo apparaît. Ouverte depuis l'écran d'accueil, Listo s'affiche en 
 
 ### 4.6 Changer de mot de passe
 
-Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions d'assistants IA ([9.10 Voir et déconnecter un assistant IA](#claude-connexions)).
+Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions d'assistants IA ([9.10 Voir et déconnecter un assistant IA](#claude-connexions)). Connecté avec un fournisseur d'identité, ou avec un compte « … seulement », « Mon compte » n'a ni « Mot de passe » ni « Double authentification » : ils se gèrent chez le fournisseur ([4.10 Se connecter avec un fournisseur d'identité](#sso)).
 
 <a id="double-auth"></a>
 
@@ -725,6 +728,8 @@ Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en chois
 Si le serveur le propose, l'écran de connexion montre aussi « Se connecter avec … », suivi du nom choisi par l'Admin (Authelia, Authentik, Pocket ID… ; « SSO » s'il n'en a pas choisi). Touchez-le, connectez-vous chez ce fournisseur : vous revenez dans Listo, connecté. Votre compte chez le fournisseur ouvre le compte Listo qui a le même identifiant. L'identifiant et le mot de passe Listo restent possibles. Si l'Admin vous avait donné un mot de passe provisoire, il est effacé à la première connexion par le fournisseur.
 
 Connecté par le fournisseur, « Mon compte » le dit (« Connecté avec … ») : votre mot de passe et votre double authentification se changent chez le fournisseur, pas dans Listo. Autoriser un assistant IA se confirme alors aussi chez le fournisseur ([9.9 Connecter un assistant IA](#claude-connecter)).
+
+L'Admin peut réserver votre compte au fournisseur : « … seulement ». Vous entrez alors uniquement avec « Se connecter avec … » ; avec votre mot de passe Listo, même juste, l'écran répond « Ce compte se connecte avec … », sans vous connecter. « Mon compte » n'a ni « Mot de passe » ni « Double authentification ». Si le fournisseur est en panne, demandez à l'Admin ([3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)).
 
 Pas encore de compte Listo : « Votre demande de compte est envoyée à l'Admin ». L'Admin la voit dans Réglages, « Administration » (pastille), onglet « Comptes », section « Demande de compte » : « Accepter » (il peut corriger l'identifiant et le nom, et choisir le rôle), ou « Refuser ». Une fois acceptée, reconnectez-vous par le fournisseur. Une demande refusée ne peut pas être refaite avant 30 jours.
 
@@ -1392,9 +1397,10 @@ Réglages, « Administration » (visible seulement pour un Admin).
 **Onglet « Comptes »**
 
 - « Ajouter un compte » ([4.2 Créer les autres comptes](#creer-comptes)).
-- Les comptes : Admin et Utilisateurs d'abord, puis les invités sous « Invités », avec la pastille « Discret ». Sous le prénom : le rôle, puis ce qui est ouvert à un invité (par exemple « Projets », ou « Listes, Projets ») ou retiré à un utilisateur (par exemple « sans projets »), sinon l'état de la double authentification.
+- Les comptes : Admin et Utilisateurs d'abord, puis les invités sous « Invités », avec la pastille « Discret ». Sous le prénom : le rôle, puis ce qui est ouvert à un invité (par exemple « Projets », ou « Listes, Projets ») ou retiré à un utilisateur (par exemple « sans projets »), sinon l'état de la double authentification ; et « … seulement » pour un compte qui se connecte avec le fournisseur d'identité seulement.
 - Bouton ⋮ d'un compte : sa page, avec son « Rôle » et ses « Fonctions autorisées » ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)), et sa « Sécurité » : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s'il n'a jamais servi (un compte qui possède un projet, en est membre ou y a écrit a servi).
 - Rôle : « Utilisateur », « Invité » ou « Admin ». Il reste toujours au moins un Admin actif.
+- « Connexion » (seulement avec un fournisseur d'identité, [3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)) : « Mot de passe ou … » (au départ) ou « … seulement » (… : le nom du fournisseur). Passer à « … seulement » demande confirmation et déconnecte tout de suite ses appareils connectés par mot de passe ; « Réinitialiser le mot de passe » disparaît. Pour un compte « … seulement » qui ne s'est encore jamais connecté avec le fournisseur, la page le dit : la personne devra y utiliser le même identifiant. Le choix est pâli, avec sa raison, pour votre propre compte (un autre Admin le change), pour le dernier Admin qui se connecte avec son mot de passe (il le garde, pour entrer si le fournisseur est en panne), et quand la connexion par mot de passe est désactivée sur le serveur (`LISTO_LOCAL_LOGIN=off` : tout le monde est déjà « … seulement »).
 
 **Onglet « Courses »**
 
@@ -1812,6 +1818,7 @@ Le proxy retient les messages du temps réel ([3.4 Ce que doit faire le proxy](#
 - « Trop de tentatives » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).
 - « Requête refusée : origine inconnue. » : l'adresse tapée n'est pas exactement celle de `LISTO_PUBLIC_URL` (autre sous-domaine, `http` au lieu de `https`) ([3.2 Le dossier et docker-compose.yml](#dossier)).
 - Mot de passe oublié, téléphone perdu : [4.8 Mot de passe oublié, téléphone perdu](#oubli).
+- « Ce compte se connecte avec … » : l'Admin a choisi « … seulement » pour votre compte ; utilisez « Se connecter avec … » ([4.10 Se connecter avec un fournisseur d'identité](#sso)).
 - Le mode hors ligne ou l'installation sur l'écran d'accueil ne marchent pas : Listo n'est pas ouvert en HTTPS. Passez toujours par `https://listo.exemple.fr`, jamais par `http://IP:13300`.
 
 <a id="faq-double-auth"></a>

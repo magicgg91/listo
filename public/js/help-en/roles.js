@@ -15,9 +15,10 @@ export default {
         { sub: "“Accounts” tab" },
         { ul: [
           "“Add account” ([[creer-comptes]]).",
-          "The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”, or “Lists, Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status.",
+          "The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”, or “Lists, Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status; and “… only” for an account that signs in with the identity provider only.",
           "An account's ⋮ button: its page, with its “Role” and its “Allowed features” ([[roles-comptes]]), and its “Security”: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used (an account that owns a project, is a member of one or wrote in one has been used).",
           "Role: “User”, “Guest” or “Admin”. There's always at least one active Admin.",
+          "“Sign-in” (only with an identity provider, [[sso-serveur]]): “Password or …” (the default) or “… only” (…: the provider's name). Switching to “… only” asks for confirmation and signs out their devices signed in with a password right away; “Reset password” goes away. For an “… only” account that has never signed in through the provider, the page says so: the person will need to use the same username there. The choice is greyed out, with its reason, for your own account (another Admin changes it), for the last Admin who signs in with a password (they keep it, to get in if the provider is down), and when password sign-in is disabled on the server (`LISTO_LOCAL_LOGIN=off`: everyone is already “… only”).",
         ] },
         { sub: "“Shopping” tab" },
         { ul: [

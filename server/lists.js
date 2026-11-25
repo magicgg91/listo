@@ -1776,7 +1776,12 @@ export function createListService(ctx) {
     // présent peut rester (et changer de droit, ou être retiré).
     for (const id of wanted) {
       if (current.has(id)) continue;
-      if (!directory.canSee(user, id)) throw new OpError(400, 'ops.utilisateurInconnu');
+      if (!directory.canSee(user, id)) {
+        // Journal (qui, combien ; jamais un nom) : repérer un essai de
+        // numéros. La réponse reste exactement celle d'un numéro inconnu.
+        ctx.audit('share_unknown_user', { user: user.username, list: list.id, count: directory.unseenCount(user, [...wanted].filter((n) => !current.has(n))) });
+        throw new OpError(400, 'ops.utilisateurInconnu');
+      }
       // … et avoir les listes autorisées par l'Admin (un invité à qui
       // l'Admin ne les a pas ouvertes ; docs/cadrage-comptes.md, étape 3) :
       // refus nommé, il est dans mon annuaire (seul l'Admin voit un invité)

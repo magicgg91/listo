@@ -66,11 +66,16 @@ export function createDirectory(db) {
     return directorySees(accountRole(viewer), accountRole(row));
   }
 
+  // Combien de ces numéros viewer ne voit pas (inconnus compris) : pour la
+  // ligne « share_unknown_user » du journal (docs/cadrage-comptes.md,
+  // section 10 : qui, combien), jamais envoyé à viewer
+  const unseenCount = (viewer, ids) => [...ids].filter((id) => !canSee(viewer, id)).length;
+
   // Rôle calculé d'un compte par son numéro (null s'il n'existe pas)
   function roleOf(id) {
     const row = account.get(id);
     return row ? accountRole(row) : null;
   }
 
-  return { directoryFor, canSee, roleOf };
+  return { directoryFor, canSee, unseenCount, roleOf };
 }

@@ -47,7 +47,7 @@ import { NOTE_TITLE_MAX, NOTE_BODY_MAX, NOTES_MAX, NOTE_TRASH_DAYS } from '../pu
 import { cleanLabelIds, LABELS_PER_NOTE_MAX } from '../public/js/labels.js';
 import { createLabelService, LABEL_NOT_FOUND } from './labels.js';
 import { createDirectory } from './directory.js';
-import { createFeatures } from './features.js';
+import { createFeatures, NOTES_NOT_ALLOWED } from './features.js';
 import { accountRole, mayShareOwn } from '../public/js/access.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -57,8 +57,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const NOTE_NOT_FOUND = 'ops.noteIntrouvable';
 export const NOTE_CONFLICT = 'ops.noteConflit';
 // Notes non autorisées par l'Admin pour ce compte (docs/cadrage-comptes.md,
-// étape 2)
-export const NOTES_NOT_ALLOWED = 'ops.notesNonAutorisees';
+// étape 2 ; texte défini dans server/features.js, qui s'en sert aussi)
+export { NOTES_NOT_ALLOWED };
 
 // Opérations de notes qui écrivent un texte : comptées par le plafond de
 // débit (createSaveCounter, route POST /api/ops)
@@ -494,7 +494,12 @@ export function createNoteService(ctx, { OpError }) {
       if (before.has(id)) continue;
       // Une personne ajoutée doit être dans MON annuaire (server/directory.js) :
       // sinon, exactement la réponse d'un compte qui n'existe pas
-      if (!directory.canSee(user, id)) throw new OpError(400, 'ops.utilisateurInconnu');
+      if (!directory.canSee(user, id)) {
+        // Journal (qui, combien ; jamais un nom) : repérer un essai de
+        // numéros. La réponse reste exactement celle d'un numéro inconnu.
+        ctx.audit('share_unknown_user', { user: user.username, note: note.id, count: directory.unseenCount(user, [...wanted].filter((n) => !before.has(n))) });
+        throw new OpError(400, 'ops.utilisateurInconnu');
+      }
       // … et avoir les notes autorisées par l'Admin (sinon elle ne la
       // verrait jamais) : refus nommé, elle est dans mon annuaire
       if (!features.allowedFor(id).notes) throw new OpError(400, 'ops.personneSansNotes', { name: q.user.get(id)?.display_name ?? '' });

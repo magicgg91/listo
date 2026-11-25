@@ -1498,7 +1498,12 @@ export function createProjectService(ctx, { OpError }) {
       if (before.has(id)) continue;
       // Une personne ajoutée doit être dans MON annuaire (server/directory.js) :
       // sinon, exactement la réponse d'un compte qui n'existe pas
-      if (!directory.canSee(user, id)) throw new OpError(400, 'ops.utilisateurInconnu');
+      if (!directory.canSee(user, id)) {
+        // Journal (qui, combien ; jamais un nom) : repérer un essai de
+        // numéros. La réponse reste exactement celle d'un numéro inconnu.
+        ctx.audit('share_unknown_user', { user: user.username, project: project.id, count: directory.unseenCount(user, [...wanted].filter((n) => !before.has(n))) });
+        throw new OpError(400, 'ops.utilisateurInconnu');
+      }
       // … et avoir les projets autorisés par l'Admin (sinon elle ne les
       // verrait jamais) : refus nommé, elle est dans mon annuaire
       if (!features.allowedFor(id).projects) throw new OpError(400, 'ops.personneSansProjets', { name: q.userName.get(id) ?? '' });

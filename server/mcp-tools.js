@@ -13,6 +13,12 @@
 // Notes (décision du 24 novembre 2026, server/mcp-notes.js) : list_notes et
 // read_note (lecture) ; create_note, append_to_note, replace_note_text,
 // set_note_labels, create_label, delete_note (écriture ; corbeille seulement).
+// Projets (étape 5 du cadrage docs/cadrage-projets.md, server/mcp-projects.js) :
+// list_projects, read_project, read_card (lecture) ; create_project,
+// rename_project, trash_project, create_columns, update_columns,
+// delete_column, create_labels, update_labels, delete_label, create_cards,
+// update_cards, move_cards, add_comments, delete_cards (écriture ; jamais
+// d'effacement définitif ni de partage).
 // Jamais, quel que soit le niveau : supprimer un élément, modifier son lien
 // ou son prix, créer, renommer, supprimer ou partager une liste, gérer les
 // personnes, le lien public, la corbeille, un compte ou l'administration.
@@ -48,6 +54,7 @@ import {
 } from '../public/js/subtasks.js';
 import { translate } from '../public/js/i18n.js';
 import { NOTE_TOOLS, createMcpNoteTools } from './mcp-notes.js';
+import { PROJECT_TOOLS, createMcpProjectTools } from './mcp-projects.js';
 
 // Refus communs avec l'application (READ_ONLY, SUBTASKS_OFF… : noms de
 // textes) : Claude les reçoit toujours en français (décision du propriétaire)
@@ -329,13 +336,16 @@ export const TOOLS = [
   // Notes (server/mcp-notes.js) : list_notes, read_note, create_note,
   // append_to_note, replace_note_text, set_note_labels, create_label, delete_note
   ...NOTE_TOOLS,
+  // Projets (server/mcp-projects.js) : les dix-sept outils de la section
+  // 12.2 du cadrage docs/cadrage-projets.md
+  ...PROJECT_TOOLS,
 ];
 
 // Argument invalide : erreur JSON-RPC -32602 (Invalid params)
 export class ParamsError extends Error {}
 
 // Résultat d'outil : texte simple (ligne fixe + JSON) et structuredContent ;
-// notice : la ligne fixe (celle des notes pour leurs outils)
+// notice : la ligne fixe (celle des notes ou des projets pour leurs outils)
 const result = (data, notice = DATA_NOTICE) => ({
   content: [{ type: 'text', text: `${notice}\n${JSON.stringify(data)}` }],
   structuredContent: data,
@@ -1098,7 +1108,9 @@ export function createMcpTools(ctx) {
 
   // Outils des notes (server/mcp-notes.js)
   const notes = createMcpNoteTools(ctx, { ParamsError, clip, READ_ONLY_GRANT });
-  const handlers = { list_lists: listLists, read_list: readList, add_items: addItems, set_checked: setChecked, update_items: updateItems, ...notes.handlers };
+  // Outils des projets (server/mcp-projects.js)
+  const projects = createMcpProjectTools(ctx, { ParamsError, clip, READ_ONLY_GRANT });
+  const handlers = { list_lists: listLists, read_list: readList, add_items: addItems, set_checked: setChecked, update_items: updateItems, ...notes.handlers, ...projects.handlers };
 
   // Appelle un outil. Renvoie { result, count } ; un nom d'outil inconnu ou
   // des arguments invalides lancent une ParamsError (-32602).
@@ -1126,6 +1138,7 @@ export function createMcpTools(ctx) {
       }
     }
     notes.prune();
+    projects.prune();
   }
 
   return { call, prune };

@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addUser, login } from './helpers.js';
-import { uuid, PASSWORD, MARIE_PASSWORD, household, connect, claude, data } from './mcp-helpers.js';
+import { uuid, PASSWORD, MARIE_PASSWORD, household, connect, claude, data, PROJECT_TOOL_NAMES } from './mcp-helpers.js';
 import { TOOLS } from '../server/mcp-tools.js';
 
 // « Noël de Marie » : Guillaume (propriétaire, gestionnaire) l'a créée pour
@@ -56,8 +56,8 @@ test('Claude du gestionnaire et d\'un proche : jamais de réservation non plus ;
   const c = claude(h, (await connect(h, h.guillaume, PASSWORD)).access_token);
   const text = JSON.stringify((await c.tool('read_list', { list_id: ids.noel, include_checked: true })).body) + JSON.stringify((await c.tool('list_lists')).body);
   assert.equal(/reserv|réserv|Paul|paul/i.test(text), false);
-  // Les outils des notes (24 novembre 2026) n'ont rien des réservations non plus
-  assert.deepEqual(TOOLS.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked', 'update_items', 'list_notes', 'read_note', 'create_note', 'append_to_note', 'replace_note_text', 'set_note_labels', 'create_label', 'delete_note']);
+  // Les outils des notes (24 novembre 2026) et des projets (25 novembre 2026) n'ont rien des réservations non plus
+  assert.deepEqual(TOOLS.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked', 'update_items', 'list_notes', 'read_note', 'create_note', 'append_to_note', 'replace_note_text', 'set_note_labels', 'create_label', 'delete_note', ...PROJECT_TOOL_NAMES]);
   assert.equal(/reserv|réserv|cadeau acheté|gift/i.test(JSON.stringify(TOOLS.slice(5))), false);
   const descriptions = JSON.stringify(TOOLS);
   assert.match(descriptions, /wishes : liste d'envies/);

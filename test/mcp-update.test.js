@@ -16,7 +16,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { addUser, login, databaseAt, tempDir } from './helpers.js';
-import { uuid, SECOND, PASSWORD, MARIE_PASSWORD, CALLBACK, household, connect, claude, data, raw } from './mcp-helpers.js';
+import { uuid, SECOND, PASSWORD, MARIE_PASSWORD, CALLBACK, household, connect, claude, data, raw, PROJECT_TOOL_NAMES } from './mcp-helpers.js';
 import { TOOLS, UPDATE_MAX, UPDATES_PER_HOUR, READ_ONLY_GRANT, LIST_NOT_FOUND } from '../server/mcp-tools.js';
 import { INSTRUCTIONS } from '../server/mcp.js';
 import { SCOPES, GRANT_SCOPES, parseScope } from '../server/oauth.js';
@@ -50,8 +50,8 @@ test('deux niveaux : « Lecture seule » n\'écrit rien (appel direct refusé) ;
   const readOnly = claude(h, (await connect(h, h.guillaume, PASSWORD)).access_token);
   separateApp(h);
   const writer = claude(h, (await connect(h, h.guillaume, PASSWORD, { scope: 'write' })).access_token);
-  // Puis les outils des notes (test/mcp-notes.test.js)
-  const all = ['list_lists', 'read_list', ...WRITE_TOOLS, 'list_notes', 'read_note', 'create_note', 'append_to_note', 'replace_note_text', 'set_note_labels', 'create_label', 'delete_note'];
+  // Puis les outils des notes (test/mcp-notes.test.js) et des projets (test/mcp-projects.test.js)
+  const all = ['list_lists', 'read_list', ...WRITE_TOOLS, 'list_notes', 'read_note', 'create_note', 'append_to_note', 'replace_note_text', 'set_note_labels', 'create_label', 'delete_note', ...PROJECT_TOOL_NAMES];
   assert.deepEqual(await names(readOnly), all, 'outils décrits à tous ; l\'écriture est refusée à l\'appel');
   assert.deepEqual(await names(writer), all);
   assert.deepEqual(TOOLS.map((tool) => tool.name), all);
@@ -315,9 +315,10 @@ test('textes : deux niveaux, outils par niveau, interdits permanents, données j
   const consent = read('public/js/screens/claude-consent.js');
   assert.match(consent, /get write\(\) \{ return t\('claude\.autoriser\.ecriture\.texte'\); \},/);
   // (notes ajoutées le 24 novembre 2026, test/mcp-notes.test.js)
-  assert.equal(fr['claude.autoriser.ecriture.texte'], 'L\'assistant IA pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance, répétition). Avec « Toutes mes listes et mes notes », il pourra aussi lire vos notes, en créer, les compléter ou remplacer leur texte, poser leurs étiquettes et les mettre à la corbeille. Jamais supprimer d\'élément ni de liste, ni effacer une note pour de bon, ni partager.');
+  // (projets ajoutés le 25 novembre 2026, test/mcp-projects.test.js)
+  assert.equal(fr['claude.autoriser.ecriture.texte'], 'L\'assistant IA pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance, répétition). Avec « Toutes mes listes, mes notes et mes projets », il pourra aussi lire vos notes, en créer, les compléter ou remplacer leur texte, poser leurs étiquettes et les mettre à la corbeille ; et, dans vos projets, avec votre rôle dans chacun, créer des projets, des colonnes, des étiquettes, des cartes et des commentaires, les modifier, déplacer des cartes, et mettre des cartes ou un projet à la corbeille. Jamais supprimer d\'élément ni de liste, ni effacer une note, une carte ou un projet pour de bon, ni partager.');
   assert.match(consent, /export const editWarningText = \(\) => t\('claude\.autoriser\.ecriture\.avertissement'\);/);
-  assert.match(fr['claude.autoriser.ecriture.avertissement'], /^Une liste ou une note partagée peut contenir un texte piégé/);
+  assert.match(fr['claude.autoriser.ecriture.avertissement'], /^Une liste, une note ou un projet partagé peut contenir un texte piégé/);
   assert.match(consent, /editWarning\.hidden = scope !== 'write';/);
   assert.match(consent, /const levels = \[\['read', t\('claude\.acces\.lecture'\)\], \['write', t\('claude\.acces\.ecriture'\)\]\];/);
   assert.match(consent, /let scope = 'read';/, '« Lecture seule » reste présélectionnée');

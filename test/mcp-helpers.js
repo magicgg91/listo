@@ -58,9 +58,11 @@ export async function raw(app, method, url, { body, headers = {}, text } = {}) {
   return { status: res.status, body: json, text: out, headers: res.headers };
 }
 
-// Connexion complète d'un compte (choice : { scope, lists }) ; renvoie les jetons
-export async function connect(h, user, password, choice = {}) {
-  const reg = await raw(h.app, 'POST', '/oauth/register', { body: { client_name: 'Claude', redirect_uris: [CALLBACK] } });
+// Connexion complète d'un compte (choice : { scope, lists }) ; renvoie les
+// jetons. clientId (facultatif) : une application déjà enregistrée (sinon
+// une nouvelle, 5 par heure et par adresse au plus)
+export async function connect(h, user, password, choice = {}, { clientId } = {}) {
+  const reg = clientId ? { body: { client_id: clientId } } : await raw(h.app, 'POST', '/oauth/register', { body: { client_name: 'Claude', redirect_uris: [CALLBACK] } });
   const verifier = crypto.randomBytes(32).toString('base64url');
   const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
   const params = new URLSearchParams({ response_type: 'code', client_id: reg.body.client_id, redirect_uri: CALLBACK, code_challenge: challenge, code_challenge_method: 'S256', state: 's' });
@@ -94,3 +96,10 @@ export function claude(h, token, { version = '2025-11-25', origin } = {}) {
   };
 }
 export const data = (res) => res.body.result.structuredContent;
+
+// Les dix-sept outils des projets, dans l'ordre de tools/list (section 12.2
+// du cadrage docs/cadrage-projets.md)
+export const PROJECT_TOOL_NAMES = [
+  'list_projects', 'read_project', 'read_card', 'create_project', 'rename_project', 'trash_project', 'create_columns', 'update_columns',
+  'delete_column', 'create_labels', 'update_labels', 'delete_label', 'create_cards', 'update_cards', 'move_cards', 'add_comments', 'delete_cards',
+];

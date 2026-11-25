@@ -2,7 +2,8 @@
 // (le serveur le vérifie à chaque requête). Deux onglets :
 // - Comptes : liste, création, rôle, réinitialisation du mot de passe,
 //   désactivation de la 2FA, désactivation / réactivation, suppression d'un
-//   compte jamais utilisé ;
+//   compte jamais utilisé, et « Connexion » (LISTO_OIDC=on : « Mot de passe
+//   ou … » ou « … seulement », … étant le nom du fournisseur d'identité) ;
 // - Courses, avec trois choix :
 //   - Magasins, Rayons : ajout, renommage, désactivation / réactivation,
 //     suppression d'un élément jamais utilisé ; les rayons sont groupés
@@ -24,7 +25,7 @@
 // viennent avec de simples compteurs.
 
 import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
-import { get, post, patch, del, errorMessage } from '../api.js';
+import { get, post, put, patch, del, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { compareNames } from '../sorting.js';
 import { activeOnly } from '../store.js';
@@ -194,10 +195,15 @@ const discreetChip = () => h('span', { class: 'chip chip--discreet' }, icon('eye
 // ======================= Comptes =======================
 
 const roleWord = (role) => t(ROLE_LABELS[role] ?? ROLE_LABELS.user);
+// Marque « … seulement » d'un compte (« SSO seulement » : connexion avec le
+// fournisseur d'identité seulement), quand la connexion par mot de passe
+// existe sur le serveur (sinon tout le monde l'est : rien à signaler)
+const ssoMark = (user, localLogin) => (user.ssoOnly && localLogin ? t('administration.connexion.seulement', { provider: providerName() }) : null);
 // État d'un compte : 2FA (ou « compte désactivé »), fournisseur d'identité
-const stateParts = (user) => [
+// (« … seulement » à la place du simple nom quand il est choisi)
+const stateParts = (user, localLogin = true) => [
   user.active ? (user.totpEnabled ? t('administration.compte.deuxFacteurs.active') : t('administration.compte.deuxFacteurs.desactive')) : t('administration.compte.desactive'),
-  user.authelia ? providerName() : null,
+  ssoMark(user, localLogin) ?? (user.authelia ? providerName() : null),
 ];
 // Fonctions autorisées, en quelques mots, sur la ligne d'un compte
 // (maquette design/comptes admin-comptes-1) : pour un invité, ce qui lui
@@ -217,10 +223,10 @@ function accessPart(user) {
 }
 // Ligne d'un compte : « Invité · Projets », « Utilisateur · sans projets »,
 // sinon « Utilisateur · 2FA désactivée » ; un compte désactivé le dit
-// toujours (ses fonctions sont sur sa page)
-const userSub = (user) => {
+// toujours (ses fonctions sont sur sa page) ; « … seulement » toujours dit
+const userSub = (user, localLogin = true) => {
   const access = user.active ? accessPart(user) : null;
-  return [roleWord(user.role), ...(access ? [access] : stateParts(user))].filter(Boolean).join(' · ');
+  return [roleWord(user.role), ...(access ? [access, ssoMark(user, localLogin)] : stateParts(user, localLogin))].filter(Boolean).join(' · ');
 };
 
 // Comptes rangés : Admin et Utilisateurs d'abord, puis les invités (sous le
@@ -238,8 +244,9 @@ async function loadUsers(panel, footer, alive, { selectedId = null, sub = null }
   let users;
   let accountRequests = [];
   let localLogin = true;
+  let oidc = false;
   try {
-    ({ users, accountRequests = [], localLogin = true } = await get('/api/admin/users'));
+    ({ users, accountRequests = [], localLogin = true, oidc = false } = await get('/api/admin/users'));
   } catch (err) {
     if (alive()) replace(panel, errorBlock(err, reload));
     return;
@@ -259,7 +266,7 @@ async function loadUsers(panel, footer, alive, { selectedId = null, sub = null }
         h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => openAcceptSheet(request, reload) }, t('administration.demande.accepter'))))),
       h('p', { class: 'section-title' }, t('administration.onglets.comptes'))]
     : [];
-  const addButton = (block) => h('button', { class: `btn btn--primary${block ? ' btn--block' : ''}`, type: 'button', onClick: () => openNewUserSheet(reload, { localLogin }) }, icon('plus'), t('administration.compte.ajouter'));
+  const addButton = (block) => h('button', { class: `btn btn--primary${block ? ' btn--block' : ''}`, type: 'button', onClick: () => openNewUserSheet(reload, { localLogin, oidc }) }, icon('plus'), t('administration.compte.ajouter'));
 
   // Ordinateur (kit 16.50, maquette pc-admin-comptes-1) : la liste à gauche,
   // la page du compte choisi à droite ; « Ajouter un compte » sous la liste
@@ -270,7 +277,7 @@ async function loadUsers(panel, footer, alive, { selectedId = null, sub = null }
       onClick: () => navigate('adminAccount', { id: user.id }, { replace: true }),
     },
     avatar(user.displayName, { second: i > 0 || user.role === 'guest' }),
-    h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, userSub(user))),
+    h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, userSub(user, localLogin))),
     user.role === 'guest' ? discreetChip() : null,
     user.active ? null : h('span', { class: 'chip' }, t('administration.compte.desactive.puce')),
     icon('chev-r'));
@@ -281,7 +288,7 @@ async function loadUsers(panel, footer, alive, { selectedId = null, sub = null }
         guests.length ? [h('h2', { class: 'section-title' }, t('administration.invites.titre')), h('div', { class: 'group' }, guests.map((u) => line(u, 1)))] : null,
         addButton(true)),
       h('div', { class: 'acct-split__page' },
-        selected ? accountPage(selected, { localLogin, reload, pc: true })
+        selected ? accountPage(selected, { localLogin, oidc, reload, pc: true })
           : h('p', { class: 'empty muted' }, t('administration.compte.choisir')))));
     return;
   }
@@ -289,7 +296,7 @@ async function loadUsers(panel, footer, alive, { selectedId = null, sub = null }
   // Téléphone (maquette admin-comptes-1) : ⋮ ouvre la page du compte
   const line = (user, i) => h('div', { class: `row${user.active ? '' : ' is-off'}` },
     avatar(user.displayName, { second: i > 0 || user.role === 'guest' }),
-    h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, userSub(user))),
+    h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, userSub(user, localLogin))),
     user.role === 'guest' ? discreetChip() : null,
     user.active ? null : h('span', { class: 'chip' }, t('administration.compte.desactive.puce')),
     iconButton('more', t('administration.compte.gerer', { name: user.displayName }), () => navigate('adminAccount', { id: user.id })));
@@ -312,8 +319,9 @@ export function renderAdminAccount(id, onLeave) {
     replace(body, loadingText());
     let users;
     let localLogin = true;
+    let oidc = false;
     try {
-      ({ users, localLogin = true } = await get('/api/admin/users'));
+      ({ users, localLogin = true, oidc = false } = await get('/api/admin/users'));
     } catch (err) {
       if (alive) replace(body, errorBlock(err, load));
       return;
@@ -326,7 +334,7 @@ export function renderAdminAccount(id, onLeave) {
     }
     title.textContent = t('administration.compte.titre', { name: user.displayName });
     document.title = `${title.textContent} · Listo`;
-    replace(body, accountPage(user, { localLogin, reload: load, pc: false }));
+    replace(body, accountPage(user, { localLogin, oidc, reload: load, pc: false }));
   };
   if (navigator.onLine) load();
   else replace(body, h('div', { class: 'empty' }, h('p', { class: 'empty__text' }, t('administration.horsLigne.texte'))));
@@ -340,10 +348,11 @@ export function renderAdminAccount(id, onLeave) {
 // Le contenu de la page d'un compte (téléphone et ordinateur) : en tête le
 // nom, l'identifiant, la 2FA (et « Discret » pour un invité) ; le rôle ;
 // les fonctions autorisées (étape 2 du cadrage ; maquettes admin-compte-1
-// et 2) ; puis la sécurité (mot de passe, double authentification, délier,
-// désactiver, supprimer). Aucun nom de liste, de note, de projet ni de
-// personne : l'Admin n'a aucun droit sur le contenu des autres.
-function accountPage(user, { localLogin = true, reload, pc = false }) {
+// et 2) ; la connexion (LISTO_OIDC=on) ; puis la sécurité (mot de passe,
+// double authentification, délier, désactiver, supprimer). Aucun nom de
+// liste, de note, de projet ni de personne : l'Admin n'a aucun droit sur le
+// contenu des autres.
+function accountPage(user, { localLogin = true, oidc = false, reload, pc = false }) {
   const self = user.id === app.user.id;
   const error = errorNote();
   const run = async (action, message) => {
@@ -363,7 +372,7 @@ function accountPage(user, { localLogin = true, reload, pc = false }) {
   const head = h('div', { class: 'card acct-card' },
     avatar(user.displayName, { second: true, large: true }),
     h('span', { class: 'grow' }, h('span', { class: 'row__title' }, user.displayName),
-      h('span', { class: 'row__sub' }, [user.username, ...stateParts(user)].filter(Boolean).join(' · '))),
+      h('span', { class: 'row__sub' }, [user.username, ...stateParts(user, localLogin)].filter(Boolean).join(' · '))),
     user.role === 'guest' ? discreetChip() : null,
     user.active ? null : h('span', { class: 'chip' }, t('administration.compte.desactive.puce')));
 
@@ -397,14 +406,90 @@ function accountPage(user, { localLogin = true, reload, pc = false }) {
         }, { idPrefix: `compte-${user.id}`, self })],
   ];
 
+  const loginBlock = oidc ? loginSection(user, { localLogin, self, run }) : null;
   const actions = securityActions(user, { localLogin, reload, run });
   const security = [
     h('h2', { class: 'section-title' }, t('administration.compte.securite')),
     actions.length ? h('div', { class: 'group' }, actions) : h('p', { class: 'page-intro' }, t('administration.compte.soiMeme')),
   ];
   return pc
-    ? [head, error.note, h('div', { class: 'acct-split__cols' }, h('div', {}, roleBlock, allowedBlock), h('div', {}, security))]
-    : [head, error.note, roleBlock, allowedBlock, security];
+    ? [head, error.note, h('div', { class: 'acct-split__cols' }, h('div', {}, roleBlock, allowedBlock), h('div', {}, loginBlock, security))]
+    : [head, error.note, roleBlock, allowedBlock, loginBlock, security];
+}
+
+// Choix « Mot de passe ou … | … seulement » (… : le nom du fournisseur
+// d'identité, LISTO_OIDC_NAME ; « SSO » par défaut). Même composant que le
+// choix du rôle (.segmented) : le choix en relief s'annonce par
+// aria-checked ; désactivé (pâli ET expliqué par la phrase dessous) quand le
+// choix n'est pas possible. onPick(ssoOnly) renvoie faux (ou une promesse
+// de faux) si le choix est refusé ou annulé : le choix revient.
+function loginChoice(ssoOnly, onPick, { label, disabled = false }) {
+  let current = ssoOnly;
+  const provider = providerName();
+  const options = [false, true].map((value) => {
+    const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', disabled }, value ? t('administration.connexion.seulement', { provider }) : t('administration.connexion.lesDeux', { provider }));
+    option.dataset.value = String(value);
+    option.addEventListener('click', async () => {
+      if (value === current) return;
+      const before = current;
+      current = value;
+      paint();
+      if ((await onPick(value)) === false) {
+        current = before;
+        paint();
+      }
+    });
+    return option;
+  });
+  const paint = () => {
+    for (const option of options) option.setAttribute('aria-checked', String(option.dataset.value === String(current)));
+  };
+  paint();
+  return h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': label }, options);
+}
+
+// Section « Connexion » de la page d'un compte (LISTO_OIDC=on, décision du
+// 25 novembre 2026). « … seulement » : ni connexion ni session par mot de
+// passe, ni mot de passe ni double authentification Listo ; le serveur le
+// vérifie (passwordLoginAllowed). Choix désactivé, avec sa raison :
+// connexion par mot de passe désactivée sur le serveur (tout le monde est
+// déjà « … seulement »), son propre compte, ou le dernier Admin qui se
+// connecte par mot de passe (il le garde si le fournisseur est en panne).
+function loginSection(user, { localLogin, self, run }) {
+  const provider = providerName();
+  const name = user.displayName;
+  const hint = h('p', { class: 'field__hint' });
+  let linkNote = null;
+  const reason = !localLogin ? t('administration.connexion.serveur', { provider })
+    : self ? t('administration.connexion.soiMeme')
+      : user.lastPasswordAdmin ? t('administration.connexion.dernierAdmin', { name, provider })
+        : null;
+  const describeChoice = (ssoOnly) => {
+    hint.textContent = reason ?? t(ssoOnly ? 'administration.connexion.seulement.aide' : 'administration.connexion.lesDeux.aide', { name, provider });
+  };
+  describeChoice(user.ssoOnly);
+  // Jamais relié au fournisseur : il entrera par le même identifiant
+  // (encadré d'information, sous le choix)
+  if ((user.ssoOnly || !localLogin) && !user.authelia) {
+    linkNote = h('div', { class: 'acct-field' }, h('div', { class: 'note' }, icon('link'), h('p', {}, t('administration.connexion.jamaisRelie', { name, provider, username: user.username }))));
+  }
+  const pick = async (ssoOnly) => {
+    if (ssoOnly) {
+      const ok = await confirmDialog({ title: t('administration.connexion.question', { provider, name }), text: t('administration.connexion.texte', { name, provider }), confirmLabel: t('administration.connexion.seulement', { provider }), danger: false });
+      if (!ok) return false;
+    }
+    describeChoice(ssoOnly);
+    const done = await run(() => put(`/api/admin/users/${user.id}/login`, { ssoOnly }), t('administration.connexion.enregistree', { name }));
+    if (!done) describeChoice(!ssoOnly);
+    return done;
+  };
+  return [
+    h('h2', { class: 'section-title' }, t('administration.connexion')),
+    h('div', { class: 'acct-field' },
+      loginChoice(!localLogin || user.ssoOnly, pick, { label: t('administration.connexion.de', { name }), disabled: Boolean(reason) }),
+      hint),
+    linkNote,
+  ];
 }
 
 // Les interrupteurs « Fonctions autorisées » (page d'un compte, « Nouveau
@@ -511,13 +596,14 @@ function keptLines(user) {
 
 // Actions de sécurité d'un compte (pas le sien : son mot de passe et sa 2FA
 // se gèrent dans ses réglages). localLogin : connexion par mot de passe
-// possible sur ce serveur ; coupée (LISTO_LOCAL_LOGIN=off),
+// possible sur ce serveur ; désactivée (LISTO_LOCAL_LOGIN=off), ou compte
+// « … seulement » (user.passwordLogin faux, même règle que le serveur),
 // « Réinitialiser le mot de passe » n'a plus de sens.
 function securityActions(user, { localLogin, reload, run }) {
   const self = user.id === app.user.id;
   const actions = [];
   if (!self) {
-    if (localLogin) {
+    if (localLogin && user.passwordLogin !== false) {
       actions.push(h('button', { class: 'row row--menu', type: 'button', onClick: () => openResetSheet(user, reload) },
         icon('reset'), h('span', { class: 'row__title' }, t('administration.motDePasse.reinitialiser.titre'))));
     }
@@ -699,9 +785,11 @@ async function refuseRequest(request, reload) {
 }
 
 // Nouveau compte (administration-3)
-// Connexion par mot de passe coupée (localLogin faux) : pas de mot de passe
-// provisoire, la personne entrera avec le fournisseur d'identité (même identifiant)
-function openNewUserSheet(reload, { localLogin = true } = {}) {
+// Connexion par mot de passe désactivée (localLogin faux), ou « … seulement »
+// choisi (LISTO_OIDC=on : choix « Connexion », « Mot de passe ou … » au
+// départ, invité compris) : pas de mot de passe provisoire, la personne
+// entrera avec le fournisseur d'identité (même identifiant)
+function openNewUserSheet(reload, { localLogin = true, oidc = false } = {}) {
   const username = h('input', { class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
   const displayName = h('input', { class: 'input', type: 'text', autocomplete: 'off', maxlength: '100' });
   const password = passwordInput({ autocomplete: 'new-password' });
@@ -712,13 +800,33 @@ function openNewUserSheet(reload, { localLogin = true } = {}) {
   const passwordField = field(t('administration.motDePasse.provisoire'), password.wrap, { hint: t('administration.motDePasse.provisoire.aide') });
   const error = errorNote();
   const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('administration.compte.creer'));
+  // « Connexion » (LISTO_OIDC=on, connexion par mot de passe permise) :
+  // « … seulement » retire le mot de passe provisoire (sa phrase dit
+  // comment la personne entrera)
+  const provider = providerName();
+  let ssoOnly = false;
+  const providerNote = h('p', { class: 'muted' }, t('administration.nouveauCompte.fournisseur', { provider }));
+  const loginHint = h('span', { class: 'field__hint' });
+  const showLogin = () => {
+    passwordField.field.hidden = !localLogin || ssoOnly;
+    // (la phrase du choix le dit déjà quand le choix est là)
+    providerNote.hidden = localLogin;
+    loginHint.textContent = t(ssoOnly ? 'administration.connexion.nouveau.seulement.aide' : 'administration.connexion.nouveau.lesDeux.aide', { provider });
+  };
+  const loginField = oidc && localLogin
+    ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('administration.connexion')),
+      loginChoice(false, (value) => { ssoOnly = value; showLogin(); return true; }, { label: t('administration.connexion') }),
+      loginHint)
+    : null;
+  showLogin();
   // Le rôle d'abord (maquette nouveau-compte-1), ses fonctions autorisées,
-  // puis l'identifiant, le nom et le mot de passe provisoire
+  // puis l'identifiant, le nom, la connexion et le mot de passe provisoire
   const form = h('form', { class: 'stack', novalidate: true },
     roleField(role, (value) => { role = value; access.setRole(value); }, t('administration.role.nouveau')),
     access.field,
     usernameField.field, nameField.field,
-    localLogin ? passwordField.field : h('p', { class: 'muted' }, t('administration.nouveauCompte.fournisseur', { provider: providerName() })),
+    loginField,
+    passwordField.field, providerNote,
     error.note, submit);
   const sheet = openSheet({ title: t('administration.nouveauCompte.titre'), content: form, scroll: true });
 
@@ -728,10 +836,11 @@ function openNewUserSheet(reload, { localLogin = true } = {}) {
     usernameField.setError(null);
     passwordField.setError(null);
     if (!/^[A-Za-z0-9._-]{2,50}$/.test(username.value.trim())) return usernameField.setError(t('administration.identifiant.invalide'));
-    if (localLogin && [...password.input.value].length < 10) return passwordField.setError(t('administration.motDePasse.court'));
+    const withPassword = localLogin && !ssoOnly;
+    if (withPassword && [...password.input.value].length < 10) return passwordField.setError(t('administration.motDePasse.court'));
     submit.disabled = true;
     try {
-      await post('/api/admin/users', { username: username.value.trim(), displayName: displayName.value.trim() || defaultDisplayName(username.value), password: localLogin ? password.input.value : undefined, role, allowed: access.value() });
+      await post('/api/admin/users', { username: username.value.trim(), displayName: displayName.value.trim() || defaultDisplayName(username.value), password: withPassword ? password.input.value : undefined, role, allowed: access.value(), ...(loginField ? { ssoOnly } : {}) });
       sheet.close();
       toast(t('administration.compte.cree'), { low: true });
       reload();

@@ -172,8 +172,8 @@ test('pastilles des colonnes : deux lignes au plus, « +N » pour les autres (un
 
 test('migration 50 : deux colonnes, « Mes cartes » au départ, contrôles ; une base d\'avant migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 50);
-  assert.equal(schemaVersion(db), 50);
+  assert.equal(MIGRATIONS.length, 51);
+  assert.equal(schemaVersion(db), 51);
   const userId = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   assert.deepEqual(db.prepare('SELECT home_projects, home_project_id FROM users WHERE id = ?').get(userId), { home_projects: 'cards', home_project_id: null });
   assert.throws(() => db.prepare("UPDATE users SET home_projects = 'meteo' WHERE id = ?").run(userId), /CHECK/);
@@ -190,9 +190,9 @@ test('migration 50 : deux colonnes, « Mes cartes » au départ, contrôles ; un
   old.close();
   const migrated = openDatabase(file);
   t.after(() => migrated.close());
-  assert.equal(schemaVersion(migrated), 50);
+  assert.equal(schemaVersion(migrated), 51);
   const after = migrated.prepare('SELECT * FROM users').all();
-  assert.deepEqual(after.map(({ home_projects, home_project_id, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ home_projects, home_project_id, sso_only, ...rest }) => rest), before);
   const home = homeFromRow(after[0]);
   assert.deepEqual(home.projectsTile, CARDS);
   assert.deepEqual(home.hidden, ['gifts']);

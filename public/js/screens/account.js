@@ -58,10 +58,12 @@ export function renderAccount(onLeave = () => {}) {
         h('div', { class: 'grow' }, h('p', { class: 'row__title' }, user.displayName), h('p', { class: 'row__sub' }, user.username ? t('compte.identifiant', { username: user.username }) : t('compte.connecte'))),
         roleChip(user)),
       h('h2', { class: 'section-title' }, t('compte.securite')),
-      // Session ouverte avec le fournisseur d'identité (« Connecté avec … ») : le mot de passe et la double
-      // authentification se gèrent chez le fournisseur d'identité (le serveur refuse aussi de
-      // les changer depuis cette session) ; sinon, comme avant
-      user.loginMethod === 'oidc'
+      // Session ouverte avec le fournisseur d'identité (« Connecté avec … »), ou
+      // compte « … seulement » (choisi par l'Admin : passwordLogin faux) : le
+      // mot de passe et la double authentification se gèrent chez le
+      // fournisseur d'identité (le serveur refuse aussi de les changer) ;
+      // sinon, comme avant
+      user.loginMethod === 'oidc' || user.passwordLogin === false
         ? h('div', { class: 'group' },
           row({ iconName: 'shield', title: t('compte.fournisseur.connecte', { provider }), sub: t('compte.fournisseur.detail', { provider }) }))
         : h('div', { class: 'group' },

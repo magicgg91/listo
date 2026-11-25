@@ -173,6 +173,24 @@ export default {
   'administration.nouveauCompte.fournisseur': 'This person will sign in with {provider}, using the same username.',
   'administration.nouveauCompte.titre': 'New account',
 
+  // Connexion (LISTO_OIDC=on) : « Mot de passe ou … » ou « … seulement »
+  // (… : le nom du fournisseur d'identité, LISTO_OIDC_NAME)
+  'administration.connexion': 'Sign-in',
+  'administration.connexion.de': '{name}\'s sign-in',
+  'administration.connexion.lesDeux': 'Password or {provider}',
+  'administration.connexion.seulement': '{provider} only',
+  'administration.connexion.lesDeux.aide': '{name} signs in with their Listo password or with {provider}.',
+  'administration.connexion.seulement.aide': '{name} signs in with {provider} only: no Listo password.',
+  'administration.connexion.nouveau.lesDeux.aide': 'This person chooses: a Listo password, or {provider}.',
+  'administration.connexion.nouveau.seulement.aide': 'This person will sign in with {provider} only, using the same username: no Listo password.',
+  'administration.connexion.jamaisRelie': '{name} has never signed in with {provider}: they\'ll need to use the same username, “{username}”.',
+  'administration.connexion.serveur': 'Password sign-in is disabled on this server: everyone signs in with {provider}.',
+  'administration.connexion.soiMeme': 'Your own sign-in setting is changed from another Admin\'s account.',
+  'administration.connexion.dernierAdmin': '{name} is the last Admin who signs in with a password: they keep it, so they can still get in if {provider} is down.',
+  'administration.connexion.question': '{provider} only for {name}?',
+  'administration.connexion.texte': '{name} will no longer be able to sign in with their Listo password. Their devices signed in with a password are signed out right away: they sign in again with {provider}.',
+  'administration.connexion.enregistree': '{name}\'s sign-in saved',
+
   // Magasins, rayons : ajout
   'administration.ajouter': 'Add',
   'administration.magasins.multi.aide': 'A “Multi” store groups several stores: items are sorted by store, with no aisles.',

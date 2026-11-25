@@ -138,6 +138,8 @@ test('créer un compte : validations, mot de passe à changer à la première co
     { ...res.body.user, id: 0, createdAt: '' },
     { id: 0, username: 'bob', displayName: 'Bob Martin', role: 'user', active: true, totpEnabled: false,
       mustChangePassword: true, createdAt: '', inUse: false, authelia: false,
+      // Connexion (migration 51) : « Mot de passe ou … » ; sans LISTO_OIDC, sans objet
+      ssoOnly: false, passwordLogin: true, lastPasswordAdmin: false,
       // Fonctions autorisées (docs/cadrage-comptes.md, étape 2) : tout pour un
       // Utilisateur ; utilisées : les notes (allumées au départ)
       allowed: { lists: true, notes: true, projects: true, projectsCreate: true, mcp: true }, used: { lists: true, notes: true, projects: false } },

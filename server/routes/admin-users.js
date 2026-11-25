@@ -11,6 +11,7 @@
 //   DELETE /api/admin/users/:id/2fa         désactiver la 2FA (téléphone perdu)
 //   DELETE /api/admin/users/:id             supprimer un compte jamais utilisé
 //   DELETE /api/admin/users/:id/authelia    délier le compte de son compte chez le fournisseur d'identité
+//   PUT    /api/admin/users/:id/login       « Connexion » : { ssoOnly } (LISTO_OIDC=on)
 // Demandes de compte (connexion avec le fournisseur d'identité, LISTO_OIDC=on seulement) :
 //   POST   /api/admin/account-requests/:id/accept   accepter (le compte est créé)
 //   POST   /api/admin/account-requests/:id/refuse   refuser (gardée 30 jours)
@@ -21,6 +22,10 @@
 //   supprimer, ni réinitialiser son propre mot de passe ou sa 2FA par ici
 //   (il passe par ses réglages, où l'ancien mot de passe est demandé) ;
 // - il reste toujours au moins un Admin actif ;
+// - avec le fournisseur d'identité ET la connexion par mot de passe
+//   (LISTO_OIDC=on, LISTO_LOCAL_LOGIN pas à off), il reste toujours au moins
+//   un Admin actif qui peut se connecter avec son mot de passe : il entre
+//   encore si le fournisseur est en panne (décision du 25 novembre 2026) ;
 // - aucune de ces routes ne donne accès au contenu des listes.
 //
 // Rôles (docs/cadrage-comptes.md, décisions du 25 novembre 2026) : Admin,
@@ -58,11 +63,25 @@
 // aussi les liens publics de ses notes ou de ses listes (journal
 // note_link_stopped ou public_link_stopped, raison en anglais) : ce qui
 // n'est plus autorisé ne reste pas ouvert à des visiteurs.
+//
+// Connexion (25 novembre 2026, migration 51, LISTO_OIDC=on) : « Mot de
+// passe ou … » (au départ) ou « … seulement » (… : le nom du fournisseur,
+// LISTO_OIDC_NAME). « … seulement » (users.sso_only) : connexion par mot de
+// passe refusée, sessions par mot de passe fermées tout de suite, ni
+// changement de mot de passe ni double authentification Listo, pas de
+// « Réinitialiser le mot de passe » ; une seule règle,
+// passwordLoginAllowed (server/auth.js). Jamais pour son propre compte (un
+// autre Admin le fait), jamais pour le dernier Admin qui se connecte par
+// mot de passe ; sans objet avec LISTO_LOCAL_LOGIN=off (tout le monde est
+// déjà « … seulement »). Un compte accepté depuis une demande faite chez le
+// fournisseur l'est d'office (server/oidc.js) ; un nouveau compte, au choix
+// de l'Admin (invité compris : pas d'office). Journal :
+// admin_login_method_changed.
 
 import crypto from 'node:crypto';
 import express from 'express';
 import { hashPassword, passwordProblem } from '../passwords.js';
-import { revokeAllSessions } from '../auth.js';
+import { revokeAllSessions, passwordLoginAllowed, closePasswordSessions } from '../auth.js';
 import { disableTwoFactor } from '../twofactor.js';
 import { isValidUsername, USERNAME_RULE, cleanName, parseId } from '../validate.js';
 import { accountRole, roleColumns, roleChangeProblem, ROLES, PERMISSIONS, defaultAllowed, allowedChangeProblem } from '../../public/js/access.js';
@@ -84,6 +103,9 @@ function wantedAllowed(role, value) {
 }
 
 const LAST_ADMIN = 'comptes.dernierAdmin'; // nom du texte
+const LAST_PASSWORD_ADMIN = 'comptes.connexion.dernierAdmin';
+// Valeurs de « Connexion » écrites dans le journal (en anglais)
+const loginWord = (ssoOnly) => (ssoOnly ? 'sso only' : 'password or sso');
 
 export function adminUserRoutes(ctx) {
   const router = express.Router();
@@ -92,6 +114,8 @@ export function adminUserRoutes(ctx) {
   const findUser = db.prepare('SELECT * FROM users WHERE id = ?');
   // Nombre d'Admin actifs autres que le compte indiqué
   const otherActiveAdmins = db.prepare("SELECT COUNT(*) FROM users WHERE role = 'admin' AND active = 1 AND id != ?").pluck();
+  // … et, parmi eux, ceux qui peuvent se connecter avec leur mot de passe
+  const otherPasswordAdmins = db.prepare("SELECT COUNT(*) FROM users WHERE role = 'admin' AND active = 1 AND sso_only = 0 AND id != ?").pluck();
   // Un compte est « utilisé » s'il possède une liste, a créé un article, est
   // membre d'une liste ou destinataire d'une liste d'envies, possède une
   // note ou en est membre, possède un projet, en est membre, ou y a écrit
@@ -136,6 +160,14 @@ export function adminUserRoutes(ctx) {
     inUse: accountUsed.get({ id: user.id }) === 1,
     // Relié à un compte chez le fournisseur d'identité (oui ou non seulement, jamais son identifiant interne)
     authelia: user.oidc_sub != null,
+    // « Connexion » (LISTO_OIDC=on) : « … seulement » choisi pour ce compte ;
+    // passwordLogin : connexion par mot de passe possible (la règle
+    // passwordLoginAllowed : faux aussi avec LISTO_LOCAL_LOGIN=off) ;
+    // lastPasswordAdmin : le dernier Admin actif qui se connecte par mot de
+    // passe (il ne peut pas passer en « … seulement »)
+    ssoOnly: Boolean(ctx.oidc) && user.sso_only === 1,
+    passwordLogin: passwordLoginAllowed(user, ctx.config),
+    lastPasswordAdmin: isLastPasswordAdmin(user),
   });
 
   // Demandes de compte en attente (connexion avec le fournisseur d'identité) : ce que la
@@ -153,6 +185,13 @@ export function adminUserRoutes(ctx) {
 
   // Vrai si retirer ce compte des Admin actifs en laisserait zéro
   const isLastActiveAdmin = (user) => accountRole(user) === 'admin' && user.active === 1 && otherActiveAdmins.get(user.id) === 0;
+  // Vrai si ce compte est le dernier Admin actif qui peut se connecter avec
+  // son mot de passe, quand cela compte (fournisseur d'identité activé, et
+  // connexion par mot de passe permise sur le serveur)
+  function isLastPasswordAdmin(user) {
+    if (!ctx.oidc || ctx.config.localLogin === false) return false;
+    return accountRole(user) === 'admin' && user.active === 1 && user.sso_only !== 1 && otherPasswordAdmins.get(user.id) === 0;
+  }
 
   // Liste des comptes, par identifiant
   router.get('/users', (req, res) => {
@@ -181,7 +220,8 @@ export function adminUserRoutes(ctx) {
     const result = await ctx.oidc.acceptRequest(id, { username, displayName: name, ...roleColumns(role) });
     if (result.key) return res.status(result.status).json({ error: req.t(result.key, result.params) });
     const access = ctx.features.initAllowed(result.id, allowed, role);
-    audit('account_request_accepted', { admin: req.user.username, user: username, role, ...(role === 'admin' ? {} : journalAccess(access)) });
+    // (compte d'une demande : « … seulement » d'office, server/oidc.js)
+    audit('account_request_accepted', { admin: req.user.username, user: username, role, ...(role === 'admin' ? {} : journalAccess(access)), login: loginWord(true) });
     res.status(201).json({ user: describe(findUser.get(result.id)) });
   });
 
@@ -207,11 +247,45 @@ export function adminUserRoutes(ctx) {
     res.json({ user: describe(findUser.get(user.id)) });
   });
 
+  // « Connexion » d'un compte (LISTO_OIDC=on) : { ssoOnly: true } pour
+  // « … seulement », false pour « Mot de passe ou … ». En passant à
+  // « … seulement », ses sessions ouvertes par mot de passe sont fermées
+  // tout de suite (celles du fournisseur restent) ; chaque requête le
+  // revérifie ensuite (loadSession, server/auth.js).
+  router.put('/users/:id/login', (req, res) => {
+    if (!ctx.oidc) return res.status(404).json({ error: req.t('comptes.routeInconnue') });
+    const user = target(req, res);
+    if (!user) return;
+    const { ssoOnly } = req.body ?? {};
+    if (typeof ssoOnly !== 'boolean') return res.status(400).json({ error: req.t('comptes.connexion.invalide') });
+    // Connexion par mot de passe désactivée sur le serveur : tout le monde
+    // est déjà « … seulement », le choix n'a pas d'objet
+    if (ctx.config.localLogin === false) return res.status(409).json({ error: req.t('comptes.connexion.serveurFournisseur', { provider: ctx.config.oidcName }) });
+    if (user.id === req.user.id) return res.status(400).json({ error: req.t('comptes.connexion.soiMeme') });
+    const result = db.transaction(() => {
+      const fresh = findUser.get(user.id);
+      if (ssoOnly && isLastPasswordAdmin(fresh)) return { refused: true };
+      if ((fresh.sso_only === 1) === ssoOnly) return { changed: false };
+      db.prepare('UPDATE users SET sso_only = ? WHERE id = ?').run(ssoOnly ? 1 : 0, user.id);
+      return { changed: true, closed: ssoOnly ? closePasswordSessions(ctx, user.id) : 0 };
+    })();
+    if (result.refused) return res.status(409).json({ error: req.t(LAST_PASSWORD_ADMIN, { provider: ctx.config.oidcName }) });
+    if (result.changed) {
+      audit('admin_login_method_changed', { admin: req.user.username, user: user.username, login: loginWord(ssoOnly), previous: loginWord(!ssoOnly), ...(result.closed ? { closed_sessions: result.closed } : {}), ip: req.ip });
+    }
+    res.json({ user: describe(findUser.get(user.id)) });
+  });
+
   // Création d'un compte. Le mot de passe initial est choisi par l'Admin :
   // l'utilisateur devra le changer à sa première connexion.
   router.post('/users', async (req, res) => {
-    const { username, displayName, role = 'user', password, allowed: askedAllowed } = req.body ?? {};
+    const { username, displayName, role = 'user', password, allowed: askedAllowed, ssoOnly: askedSsoOnly } = req.body ?? {};
     if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
+    // « Connexion » : « … seulement » au choix de l'Admin (LISTO_OIDC=on
+    // seulement ; jamais d'office, invité compris)
+    if (askedSsoOnly !== undefined && typeof askedSsoOnly !== 'boolean') return res.status(400).json({ error: req.t('comptes.connexion.invalide') });
+    if (askedSsoOnly && !ctx.oidc) return res.status(400).json({ error: req.t('comptes.connexion.invalide') });
+    const ssoOnly = askedSsoOnly === true;
     const name = displayName === undefined || displayName === '' ? username : cleanName(displayName);
     if (!name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
     if (!ROLES.includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
@@ -220,10 +294,11 @@ export function adminUserRoutes(ctx) {
     const { allowed, problem: allowedProblem } = wantedAllowed(role, askedAllowed);
     if (allowedProblem) return res.status(400).json({ error: req.t(allowedProblem) });
     const columns = roleColumns(role);
-    // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : pas de
-    // mot de passe provisoire ; la personne entrera avec le fournisseur d'identité (même
-    // identifiant), le compte a un mot de passe aléatoire que personne ne connaît
-    const local = ctx.config.localLogin !== false;
+    // Connexion par mot de passe désactivée (LISTO_LOCAL_LOGIN=off), ou compte
+    // « … seulement » : pas de mot de passe provisoire ; la personne entrera
+    // avec le fournisseur d'identité (même identifiant), le compte a un mot de
+    // passe aléatoire que personne ne connaît (même règle que la connexion)
+    const local = passwordLoginAllowed({ sso_only: ssoOnly ? 1 : 0 }, ctx.config);
     if (local) {
       const problem = passwordProblem(password);
       if (problem) return res.status(400).json({ error: req.t(problem.key, problem.params) });
@@ -233,8 +308,8 @@ export function adminUserRoutes(ctx) {
     // NOCASE dans la base) ; la vérification se fait au moment d'écrire.
     let id;
     try {
-      id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, guest, must_change_password) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(username, name, hash, columns.role, columns.guest, local ? 1 : 0).lastInsertRowid;
+      id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, guest, must_change_password, sso_only) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .run(username, name, hash, columns.role, columns.guest, local ? 1 : 0, ssoOnly ? 1 : 0).lastInsertRowid;
     } catch (err) {
       if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: req.t('comptes.identifiant.existe') });
       throw err;
@@ -242,7 +317,7 @@ export function adminUserRoutes(ctx) {
     // Cases écrites (et, pour un invité, ses fonctions cochées allumées,
     // les autres éteintes : rien d'allumé tant que l'Admin n'a rien coché)
     const access = ctx.features.initAllowed(id, allowed, role);
-    audit('admin_account_created', { admin: req.user.username, user: username, role, ...(role === 'admin' ? {} : journalAccess(access)), ip: req.ip });
+    audit('admin_account_created', { admin: req.user.username, user: username, role, ...(role === 'admin' ? {} : journalAccess(access)), ...(ssoOnly ? { login: loginWord(true) } : {}), ip: req.ip });
     res.status(201).json({ user: describe(findUser.get(id)) });
   });
 
@@ -284,6 +359,7 @@ export function adminUserRoutes(ctx) {
       return res.status(400).json({ error: req.t('comptes.soiMeme.desactiver') });
     }
     if (losesAdmin && isLastActiveAdmin(user)) return res.status(409).json({ error: req.t(LAST_ADMIN) });
+    if (losesAdmin && isLastPasswordAdmin(user)) return res.status(409).json({ error: req.t(LAST_PASSWORD_ADMIN, { provider: ctx.config.oidcName }) });
     // Devenir invité : jamais tant qu'une liste d'envies lui est destinée
     if (after === 'guest' && before !== 'guest') {
       const count = wishListsFor.get(user.id);
@@ -362,6 +438,10 @@ export function adminUserRoutes(ctx) {
     if (user.id === req.user.id) {
       return res.status(400).json({ error: req.t('comptes.soiMeme.motDePasse') });
     }
+    // Compte « … seulement » : pas de mot de passe Listo à donner
+    if (!passwordLoginAllowed(user, ctx.config)) {
+      return res.status(403).json({ error: req.t('comptes.motDePasse.fournisseurSeulement', { name: user.display_name, provider: ctx.config.oidcName }) });
+    }
     const problem = passwordProblem(req.body?.password);
     if (problem) return res.status(400).json({ error: req.t(problem.key, problem.params) });
 
@@ -392,6 +472,7 @@ export function adminUserRoutes(ctx) {
     if (!user) return;
     if (user.id === req.user.id) return res.status(400).json({ error: req.t('comptes.soiMeme.supprimer') });
     if (isLastActiveAdmin(user)) return res.status(409).json({ error: req.t(LAST_ADMIN) });
+    if (isLastPasswordAdmin(user)) return res.status(409).json({ error: req.t(LAST_PASSWORD_ADMIN, { provider: ctx.config.oidcName }) });
     if (accountUsed.get({ id: user.id }) === 1) {
       return res.status(409).json({ error: req.t('comptes.dejaServi') });
     }

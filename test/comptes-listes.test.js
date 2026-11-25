@@ -103,17 +103,17 @@ test('migration 49 : lists_allowed et lists_enabled, 1 pour la famille, 0 pour u
   db.pragma('foreign_keys = ON');
   migrate(db);
   t.after(() => db.close());
-  assert.equal(MIGRATIONS.length, 50);
-  assert.equal(schemaVersion(db), 50);
+  assert.equal(MIGRATIONS.length, 51);
+  assert.equal(schemaVersion(db), 51);
   const after = db.prepare('SELECT * FROM users ORDER BY id').all();
-  assert.deepEqual(after.map(({ lists_allowed, lists_enabled, home_projects, home_project_id, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ lists_allowed, lists_enabled, home_projects, home_project_id, sso_only, ...rest }) => rest), before);
   assert.deepEqual(after.map((row) => [row.lists_allowed, row.lists_enabled]), [[1, 1], [1, 1], [0, 0]], 'invité déjà créé : listes non autorisées (le plus sûr)');
   for (const column of ['lists_allowed', 'lists_enabled']) {
     assert.throws(() => db.prepare(`UPDATE users SET ${column} = 2 WHERE id = 3`).run(), /CHECK/, column);
     assert.throws(() => db.prepare(`UPDATE users SET ${column} = NULL WHERE id = 3`).run(), /NOT NULL/, column);
   }
   migrate(db);
-  assert.equal(schemaVersion(db), 50);
+  assert.equal(schemaVersion(db), 51);
 });
 
 // --- Règles pures ---

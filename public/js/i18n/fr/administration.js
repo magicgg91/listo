@@ -173,6 +173,24 @@ export default {
   'administration.nouveauCompte.fournisseur': 'La personne se connectera avec {provider}, avec le même identifiant.',
   'administration.nouveauCompte.titre': 'Nouveau compte',
 
+  // Connexion (LISTO_OIDC=on) : « Mot de passe ou … » ou « … seulement »
+  // (… : le nom du fournisseur d'identité, LISTO_OIDC_NAME)
+  'administration.connexion': 'Connexion',
+  'administration.connexion.de': 'Connexion de {name}',
+  'administration.connexion.lesDeux': 'Mot de passe ou {provider}',
+  'administration.connexion.seulement': '{provider} seulement',
+  'administration.connexion.lesDeux.aide': '{name} se connecte avec son mot de passe Listo ou avec {provider}.',
+  'administration.connexion.seulement.aide': '{name} se connecte seulement avec {provider} : pas de mot de passe Listo.',
+  'administration.connexion.nouveau.lesDeux.aide': 'La personne choisit : un mot de passe Listo, ou {provider}.',
+  'administration.connexion.nouveau.seulement.aide': 'La personne se connectera seulement avec {provider}, avec le même identifiant : pas de mot de passe Listo.',
+  'administration.connexion.jamaisRelie': '{name} ne s\'est jamais connecté avec {provider} : il devra utiliser le même identifiant, « {username} ».',
+  'administration.connexion.serveur': 'La connexion par mot de passe est désactivée sur ce serveur : tout le monde se connecte avec {provider}.',
+  'administration.connexion.soiMeme': 'Votre propre connexion se change depuis le compte d\'un autre Admin.',
+  'administration.connexion.dernierAdmin': '{name} est le dernier Admin qui se connecte avec son mot de passe : il le garde, pour pouvoir entrer si {provider} est en panne.',
+  'administration.connexion.question': '{provider} seulement pour {name} ?',
+  'administration.connexion.texte': '{name} ne pourra plus se connecter avec son mot de passe Listo. Ses appareils connectés par mot de passe sont déconnectés tout de suite : il se reconnecte avec {provider}.',
+  'administration.connexion.enregistree': 'Connexion de {name} enregistrée',
+
   // Magasins, rayons : ajout
   'administration.ajouter': 'Ajouter',
   'administration.magasins.multi.aide': 'Un magasin multi regroupe plusieurs magasins : les articles sont classés par magasin, sans rayons.',

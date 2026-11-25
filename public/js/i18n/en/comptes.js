@@ -66,4 +66,13 @@ export default {
   'comptes.soiMeme.deuxFacteurs': 'Disable your own 2FA from your settings.',
   'comptes.soiMeme.supprimer': 'You can\'t delete your own account.',
   'comptes.dejaServi': 'This account has already been used: it can be disabled, not deleted.',
+
+  // Connexion « … seulement » (Administration › compte, « Connexion » ;
+  // server/auth.js, passwordLoginAllowed)
+  'comptes.connexion.fournisseurSeulement': 'This account signs in with {provider}: use “Sign in with {provider}”.',
+  'comptes.connexion.invalide': 'Invalid sign-in setting (ssoOnly: true or false).',
+  'comptes.connexion.serveurFournisseur': 'Password sign-in is disabled on this server: everyone already signs in with {provider}.',
+  'comptes.connexion.soiMeme': 'Your own sign-in setting is changed from another Admin\'s account.',
+  'comptes.connexion.dernierAdmin': 'There must always be at least one active Admin who signs in with a password: they can still get in if {provider} is down.',
+  'comptes.motDePasse.fournisseurSeulement': '{name} signs in with {provider} only: there is no Listo password to reset.',
 };

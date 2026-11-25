@@ -173,6 +173,13 @@ function passwordStep(show, info = {}) {
         if (result.twoFactorRequired) show(codeStep, { username: username.value.trim() });
         else loggedIn(result.user);
       } catch (err) {
+        // Compte « … seulement » (mot de passe juste, mais ce compte se
+        // connecte avec le fournisseur d'identité) : le message, juste
+        // au-dessus du bouton « Se connecter avec … », sans champ en erreur
+        if (err instanceof ApiError && err.data?.code === 'comptes.connexion.fournisseurSeulement') {
+          error.show(errorMessage(err));
+          return;
+        }
         // Les deux champs sont signalés, sans y mettre le curseur
         error.show(errorMessage(err), username, password.input);
       }

@@ -297,6 +297,32 @@ export function commentRights(comment, me, role) {
   return { edit: mine, remove: mine || role === 'owner' };
 }
 
+// --- Commentaires importés (étape 5 : section 12.4) ---
+
+// Auteur d'origine d'un commentaire importé par un assistant IA : simple
+// texte d'une ligne (1 à 60 caractères, sans caractère de contrôle ni
+// caractère invisible), jamais relié à un compte ; null s'il n'est pas valable
+export const cleanImportedAuthor = (value) => cleanName(value, IMPORTED_AUTHOR_MAX);
+
+// Date d'origine d'un commentaire importé : absente (null), une date
+// AAAA-MM-JJ (gardée à midi UTC : le même jour partout) ou une date et
+// heure ISO, du 1er janvier 2000 jusqu'à maintenant (now, en millisecondes ;
+// jamais dans le futur). Renvoie la date ISO gardée, null (aucune), ou
+// undefined si elle n'est pas valable.
+export function cleanImportedAt(value, now) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string' || value.length > 40) return undefined;
+  let time;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    if (!isCardDate(value)) return undefined;
+    time = Date.parse(`${value}T12:00:00.000Z`);
+  } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    time = Date.parse(value);
+  } else return undefined;
+  if (!Number.isFinite(time) || time < Date.parse('2000-01-01T00:00:00.000Z') || time > now) return undefined;
+  return new Date(time).toISOString();
+}
+
 // --- Suivre une carte (étape 3 : section 9.2) ---
 
 // Je suis une carte ? choice : mon choix explicite (true « Suivre », false

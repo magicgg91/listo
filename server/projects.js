@@ -64,7 +64,7 @@ import {
   roleOfAccess, projectRights, cardRights, assignChangeAllowed, assignableRole, isColumnColor,
   cleanProjectName, cleanColumnName, cleanCardTitle, cleanProjectLabelName, nameKey,
   cleanCardLabelIds, cleanAssigneeIds, placeFor, byPosition, isUuid,
-  cleanComment, commentRights, followsCard, COMMENTS_PER_CARD_MAX, COMMENT_MAX,
+  cleanComment, commentRights, followsCard, COMMENTS_PER_CARD_MAX, COMMENT_MAX, cleanImportedAuthor, cleanImportedAt,
 } from '../public/js/projects.js';
 import { DEFAULT_LABEL_COLOR } from '../public/js/labels.js';
 import { setTaskAt } from '../public/js/note-format.js';
@@ -260,6 +260,10 @@ export function createProjectService(ctx, { OpError }) {
     anyComment: db.prepare('SELECT card_id FROM card_comments WHERE id = ?').pluck(),
     countComments: db.prepare('SELECT COUNT(*) FROM card_comments WHERE card_id = ? AND deleted_at IS NULL').pluck(),
     insertComment: db.prepare('INSERT INTO card_comments (id, card_id, user_id, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'),
+    // Commentaire importé par un assistant IA (étape 5, section 12.4) :
+    // l'auteur et la date d'origine dans leurs colonnes, jamais dans le texte
+    insertImportedComment: db.prepare(`INSERT INTO card_comments (id, card_id, user_id, body, imported_author, imported_at, imported_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`),
     editComment: db.prepare('UPDATE card_comments SET body = ?, edited = 1, updated_at = ? WHERE id = ?'),
     // Supprimé : le texte part tout de suite ; la ligne reste (synchronisation)
     dropComment: db.prepare("UPDATE card_comments SET body = '', deleted_at = ?, updated_at = ? WHERE id = ?"),
@@ -1329,6 +1333,13 @@ export function createProjectService(ctx, { OpError }) {
     // cartes ; jamais en « Lecture seule ») : commentId choisi par le
     // téléphone (hors ligne) ; texte simple, 1 à 4 000 caractères ; 500 au
     // plus par carte. Le texte ne va ni dans l'historique ni dans le journal.
+    // Commentaire importé (étape 5, section 12.4 ; seulement par un
+    // assistant IA, meta.source 'mcp' : venus de l'application, ces champs
+    // sont refusés) : importedAuthor, l'auteur d'origine comme simple texte
+    // (1 à 60 caractères, jamais relié à un compte), importedAt, sa date
+    // d'origine (passée, facultative) ; le commentaire est au nom du compte
+    // qui l'importe (lui seul le modifie ; lui ou le propriétaire du projet
+    // le supprime, comme tout commentaire).
     'comment.create'(user, op, meta) {
       const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
       if (!can.comment) throw cardDenied(role, PROJECT_READ_ONLY);
@@ -1337,9 +1348,15 @@ export function createProjectService(ctx, { OpError }) {
       if (owner === card.id && q.comment.get(id, card.id).user_id === user.id) return {}; // déjà écrit (opération rejouée)
       if (owner) throw new OpError(409, 'ops.commentaireExisteDeja');
       const body = commentOf(op.text);
+      const imported = op.importedAuthor !== undefined || op.importedAt !== undefined;
+      if (imported && meta.source !== 'mcp') throw new OpError(400, 'ops.commentaireImporteInvalide');
+      const author = imported ? cleanImportedAuthor(op.importedAuthor) : null;
+      const importedAt = imported ? cleanImportedAt(op.importedAt, ctx.now()) : null;
+      if (imported && (author === null || importedAt === undefined)) throw new OpError(400, 'ops.commentaireImporteInvalide');
       if (q.countComments.get(card.id) >= COMMENTS_PER_CARD_MAX) throw new OpError(400, 'ops.commentairesLimite', { max: COMMENTS_PER_CARD_MAX });
       const now = nowIso();
-      q.insertComment.run(id, card.id, user.id, body, now, now);
+      if (imported) q.insertImportedComment.run(id, card.id, user.id, body, author, importedAt, user.id, now, now);
+      else q.insertComment.run(id, card.id, user.id, body, now, now);
       const eventId = logEvent(card, user, 'comment', {}, meta.source);
       changedForProject(project);
       cardActivity('comment', card, user, eventId);

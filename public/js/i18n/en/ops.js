@@ -222,6 +222,7 @@ export default {
   'ops.commentaireSiensSeulement': 'You can only edit or delete your own comments.',
   'ops.commentaireExisteDeja': 'This comment already exists.',
   'ops.commentaireInvalide': 'A comment has 1 to {max} characters, as plain text.',
+  'ops.commentaireImporteInvalide': 'Invalid imported comment: original author of 1 to 60 characters, as plain text, and a past date; only through an AI assistant.',
   'ops.commentairesLimite': 'A card has at most {max} comments.',
   'ops.commentairesTropVite': 'Too many comments right now. Try again in a moment.',
   'ops.suivreInvalide': 'Invalid “following” value (true or false).',

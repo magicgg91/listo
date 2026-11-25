@@ -222,6 +222,7 @@ export default {
   'ops.commentaireSiensSeulement': 'Vous ne pouvez modifier ou supprimer que vos propres commentaires.',
   'ops.commentaireExisteDeja': 'Ce commentaire existe déjà.',
   'ops.commentaireInvalide': 'Un commentaire compte de 1 à {max} caractères, en texte simple.',
+  'ops.commentaireImporteInvalide': 'Commentaire importé invalide : auteur d\'origine de 1 à 60 caractères, en texte simple, et date passée ; seulement par un assistant IA.',
   'ops.commentairesLimite': 'Une carte compte {max} commentaires au plus.',
   'ops.commentairesTropVite': 'Trop de commentaires pour le moment. Réessayez dans un moment.',
   'ops.suivreInvalide': 'Valeur « following » invalide (true ou false).',

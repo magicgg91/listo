@@ -28,6 +28,9 @@
 //   « event: refs » des magasins et rayons (LE contrôle de
 //   server/features.js, relu à chaque envoi) ; il garde « event: refs »
 //   sans données pour son propre réglage et les étiquettes des notes ;
+// - de même, « event: note » ne part qu'aux comptes dont l'Admin autorise
+//   les notes, et « event: project » qu'aux comptes qui utilisent les
+//   projets (comme la synchronisation) ;
 // - 5 connexions au plus par compte : au-delà, la plus ancienne est fermée ;
 // - une connexion fermée est retirée tout de suite (aucune fuite de mémoire).
 
@@ -102,6 +105,13 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
   // Le compte utilise-t-il les listes ? (server/features.js ; sans ce
   // service, comme avant : oui)
   const usesLists = (userId) => ctx.features?.listsUsed(userId) ?? true;
+  // Les mêmes règles que la synchronisation (server/features.js) : notes
+  // AUTORISÉES par l'Admin (autorisées mais éteintes par la personne, elles
+  // se synchronisent comme avant, donc le signal part aussi), projets
+  // UTILISÉS (autorisés et allumés : sinon la synchronisation n'en envoie
+  // rien)
+  const usesNotes = (userId) => ctx.features?.allowedFor(userId).notes ?? true;
+  const usesProjects = (userId) => ctx.features?.featuresFor(userId).projects ?? true;
 
   // Prévient les comptes donnés qu'une liste a changé (jamais un compte
   // qui n'utilise pas les listes : il n'en apprend rien, pas même le
@@ -120,6 +130,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
   function notifyNotes(userIds) {
     const message = 'event: note\ndata: {}\n\n';
     for (const userId of new Set(userIds)) {
+      if (!byUser.has(userId) || !usesNotes(userId)) continue;
       for (const connection of byUser.get(userId) ?? []) write(connection, message);
     }
   }
@@ -131,6 +142,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
   function notifyProjects(userIds) {
     const message = 'event: project\ndata: {}\n\n';
     for (const userId of new Set(userIds)) {
+      if (!byUser.has(userId) || !usesProjects(userId)) continue;
       for (const connection of byUser.get(userId) ?? []) write(connection, message);
     }
   }

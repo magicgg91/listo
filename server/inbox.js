@@ -376,7 +376,14 @@ export function createInbox(ctx) {
   function resolve(user, row) {
     const id = row.target_id;
     switch (row.target_type) {
-      case 'deadlines': return { target: { type: 'deadlines' } };
+      case 'deadlines': {
+        // Résumé du matin : caché à un compte qui n'utilise ni les listes ni
+        // les projets (un invité sans « Listes » ni projets) ; la même règle
+        // que le résumé lui-même (server/notify.js : tâches si les listes
+        // sont utilisées, cartes si les projets le sont)
+        if (!features.listsUsed(user.id) && !features.featuresFor(user.id).projects) return { hidden: true };
+        return { target: { type: 'deadlines' } };
+      }
       case 'list': {
         // Listes non utilisées (un invité sans « Listes », docs/cadrage-
         // comptes.md, étape 3) : rien, sauf la ligne « Partage » quand

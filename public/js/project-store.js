@@ -15,8 +15,10 @@ import {
   projectRights, cardRights, assignChangeAllowed, assignableRole, placeFor, byPosition, nameTaken,
   cleanProjectName, cleanColumnName, cleanCardTitle, cleanProjectLabelName, cleanCardLabelIds, cleanAssigneeIds,
   isColumnColor, DEFAULT_COLUMN_COLOR, COLUMNS_MAX, PROJECT_LABELS_MAX,
+  cleanCardDue, isCardPriority, cleanDescription, cleanLinkUrl, cleanLinkTitle, LINKS_PER_CARD_MAX,
 } from './projects.js';
 import { DEFAULT_LABEL_COLOR } from './labels.js';
+import { setTaskAt } from './note-format.js';
 
 // Projets dans l'état vide de la copie locale (store.js, emptyState)
 export function emptyProjects() {
@@ -32,6 +34,11 @@ export function emptyProjects() {
     // synchronisation doit tout recharger (le serveur n'envoyait rien tant
     // qu'ils étaient coupés)
     projectsReload: false,
+    // Descriptions « À vérifier » (enregistrement refusé : la description a
+    // changé entre-temps) : carte -> { description, at, byName } ; mon texte
+    // reste sur ce téléphone jusqu'à mon choix, jamais effacé par une
+    // synchronisation (comme les notes)
+    cardConflicts: new Map(),
   };
 }
 
@@ -43,6 +50,7 @@ export function projectsSnapshot(state) {
     cards: [...state.cards.values()],
     projectMine: state.projectMine,
     projectsReload: state.projectsReload,
+    cardConflicts: [...state.cardConflicts],
   };
 }
 
@@ -53,6 +61,7 @@ export function projectsFromSnapshot(state, snapshot) {
   state.cards = new Map((snapshot.cards ?? []).map((card) => [card.id, card]));
   state.projectMine = snapshot.projectMine && typeof snapshot.projectMine === 'object' ? snapshot.projectMine : {};
   state.projectsReload = snapshot.projectsReload === true;
+  state.cardConflicts = new Map(Array.isArray(snapshot.cardConflicts) ? snapshot.cardConflicts : []);
 }
 
 // Ce que la synchronisation apporte (full : synchronisation complète ;
@@ -155,6 +164,7 @@ export const PROJECT_OP_TYPES = [
   'column.create', 'column.update', 'column.move', 'column.delete',
   'label.create', 'label.update', 'label.delete',
   'card.create', 'card.update', 'card.move', 'card.delete', 'card.restore', 'card.duplicate', 'card.labels', 'card.assign',
+  'card.done', 'card.describe', 'card.task', 'link.create', 'link.update', 'link.delete',
 ];
 
 // Applique une opération des projets à la copie locale. Ce que mon rôle ne
@@ -318,6 +328,7 @@ export function applyProjectOp(state, op, { user, now }) {
         id: op.cardId, projectId: project.id, columnId: column.id, position: place.position, title, labelIds: labels, assigneeIds: [],
         createdByMe: true, createdByName: user?.displayName ?? null, createdAt: now, updatedAt: now, updatedByName: user?.displayName ?? null,
         deletedAt: null, deletedByName: null, deletedColumnName: null,
+        ...EMPTY_DETAILS,
       });
       setProject({ ...project, cardIds: [...(project.cardIds ?? []), op.cardId] });
       return;
@@ -327,6 +338,12 @@ export function applyProjectOp(state, op, { user, now }) {
   }
 }
 
+// Détails d'une carte neuve (étape 2)
+const EMPTY_DETAILS = {
+  description: '', descriptionVersion: 1, descriptionByMe: false, descriptionByName: null, descriptionAt: null,
+  priority: 'normal', dueDate: null, dueTime: null, remindBefore: null, done: false, doneAt: null, links: [],
+};
+
 // Opérations sur une carte existante
 function applyCardOp(state, op, { user, me, now }) {
   const card = state.cards.get(op.cardId);
@@ -335,10 +352,72 @@ function applyCardOp(state, op, { user, me, now }) {
   const can = cardRights(card, me, project.role);
   const set = (next) => state.cards.set(card.id, { ...card, ...next, updatedAt: now, updatedByName: user?.displayName ?? null });
   switch (op.type) {
+    // Seulement les champs donnés : titre, échéance (null : retirée, avec
+    // « Fait »), priorité (option du projet allumée)
     case 'card.update': {
-      const title = cleanCardTitle(op.title);
-      if (card.deletedAt || !can.edit || !title) return;
-      set({ title });
+      if (card.deletedAt || !can.edit) return;
+      const next = {};
+      if (op.title !== undefined) {
+        const title = cleanCardTitle(op.title);
+        if (!title) return;
+        next.title = title;
+      }
+      if (op.due !== undefined) {
+        const due = cleanCardDue(op.due);
+        if (due === undefined) return;
+        Object.assign(next, { dueDate: due?.date ?? null, dueTime: due?.time ?? null, remindBefore: due?.remindBefore ?? null });
+        if (due === null) Object.assign(next, { done: false, doneAt: null });
+      }
+      if (op.priority !== undefined) {
+        if (!isCardPriority(op.priority) || !project.priorityEnabled) return;
+        next.priority = op.priority;
+      }
+      if (Object.keys(next).length) set(next);
+      return;
+    }
+    case 'card.done': {
+      if (card.deletedAt || !can.edit || typeof op.done !== 'boolean' || !card.dueDate) return;
+      if (Boolean(card.done) !== op.done) set({ done: op.done, doneAt: op.done ? now : null });
+      return;
+    }
+    // Description : la version monte (le serveur en fait autant) ; une
+    // version de départ dépassée ne change rien ici (le serveur refusera,
+    // la carte passera « À vérifier »)
+    case 'card.describe': {
+      const text = cleanDescription(op.description);
+      if (card.deletedAt || !can.edit || text === null || op.baseVersion !== card.descriptionVersion) return;
+      if (text !== card.description) {
+        set({ description: text, descriptionVersion: card.descriptionVersion + 1, descriptionByMe: true, descriptionByName: user?.displayName ?? null, descriptionAt: now });
+      }
+      return;
+    }
+    // Une case cochée : seulement elle, sur le texte actuel
+    case 'card.task': {
+      if (card.deletedAt || !can.edit || typeof op.checked !== 'boolean') return;
+      const next = setTaskAt(card.description, op.index, op.text, op.checked);
+      if (next !== null && next !== card.description) set({ description: next, descriptionVersion: card.descriptionVersion + 1, descriptionByMe: true, descriptionByName: user?.displayName ?? null, descriptionAt: now });
+      return;
+    }
+    case 'link.create': {
+      const url = cleanLinkUrl(op.url);
+      const title = cleanLinkTitle(op.title);
+      const links = card.links ?? [];
+      if (card.deletedAt || !can.edit || !url || title === null || links.length >= LINKS_PER_CARD_MAX || links.some((link) => link.id === op.linkId)) return;
+      set({ links: [...links, { id: op.linkId, title, url }] });
+      return;
+    }
+    case 'link.update': {
+      const link = (card.links ?? []).find((l) => l.id === op.linkId);
+      if (card.deletedAt || !can.edit || !link) return;
+      const title = op.title === undefined ? link.title : cleanLinkTitle(op.title);
+      const url = op.url === undefined ? link.url : cleanLinkUrl(op.url);
+      if (title === null || !url) return;
+      set({ links: card.links.map((l) => (l.id === link.id ? { ...l, title, url } : l)) });
+      return;
+    }
+    case 'link.delete': {
+      if (card.deletedAt || !can.edit || !(card.links ?? []).some((l) => l.id === op.linkId)) return;
+      set({ links: card.links.filter((l) => l.id !== op.linkId) });
       return;
     }
     case 'card.move': {
@@ -377,6 +456,10 @@ function applyCardOp(state, op, { user, me, now }) {
       state.cards.set(op.newCardId, {
         ...card, id: op.newCardId, title, position: place.position, createdByMe: true, createdByName: user?.displayName ?? null,
         createdAt: now, updatedAt: now, updatedByName: user?.displayName ?? null,
+        // Détails copiés, « Fait » décoché ; liens avec leurs nouveaux identifiants
+        descriptionVersion: 1, descriptionByMe: Boolean(card.description), descriptionByName: card.description ? user?.displayName ?? null : null,
+        descriptionAt: card.description ? now : null, done: false, doneAt: null,
+        links: (card.links ?? []).map((link) => ({ ...link, id: op.linkIds?.[link.id] ?? link.id })),
       });
       state.projects.set(project.id, { ...project, cardIds: [...(project.cardIds ?? []), op.newCardId] });
       return;

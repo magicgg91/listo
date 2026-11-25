@@ -11,8 +11,10 @@
 // projects.js (projectRights, cardRights), partagé avec le serveur, qui
 // revérifie toujours tout.
 
-import { byPosition, daysLeft } from './projects.js';
+import { byPosition, daysLeft, cardDone } from './projects.js';
 import { matches, isSearching } from './search.js';
+import { plainText, taskCount } from './note-format.js';
+import { isLate, compareDue } from './due-time.js';
 
 // --- Projets ---
 
@@ -76,30 +78,111 @@ export const projectNewsMuted = (state, projectId) => Boolean(state.projectMine?
 
 // --- Cartes d'un projet : recherche et filtre ---
 
-// Une carte trouvée par la recherche du projet : son titre ou le nom d'une
-// de ses étiquettes (les descriptions et les liens viendront avec l'étape 2)
+// Une carte trouvée par la recherche du projet (4.2) : son titre, sa
+// description (sans les marques), le nom d'une de ses étiquettes ou le
+// titre d'un de ses liens
 export function cardMatches(card, project, query) {
   if (!isSearching(query)) return true;
   if (matches(card.title, query)) return true;
+  if (card.description && matches(plainText(card.description), query)) return true;
+  if ((card.links ?? []).some((link) => link.title && matches(link.title, query))) return true;
   const labels = new Map((project?.labels ?? []).map((label) => [label.id, label.name]));
   return (card.labelIds ?? []).some((id) => labels.has(id) && matches(labels.get(id), query));
 }
 
-// Filtre par étiquettes (plusieurs choix) : une carte est montrée si elle
-// porte une des étiquettes choisies ; aucun choix : toutes. Les étiquettes
-// qui n'existent plus dans le projet sont ignorées.
-export function cleanLabelFilter(project, labelIds) {
+// --- Filtre : personnes et étiquettes (4.2, maquette projet-2) ---
+// { people, labels } : people, des numéros de comptes et 'none' (carte
+// sans attribution, « Personne ») ; labels, des étiquettes du projet.
+// Une carte est montrée si elle est à une des personnes cochées ET porte
+// une des étiquettes choisies (aucun choix d'un côté : tout ce côté).
+export const NO_ONE = 'none';
+export const emptyFilter = () => ({ people: [], labels: [] });
+export const filterCount = (filter) => filter.people.length + filter.labels.length;
+
+// Filtre nettoyé : les étiquettes qui n'existent plus dans le projet et
+// les personnes qui n'en sont plus membres sont ignorées. Accepte
+// l'ancienne forme (tableau d'étiquettes, étape 1).
+export function cleanFilter(project, value) {
+  const raw = Array.isArray(value) ? { labels: value, people: [] } : (value && typeof value === 'object' ? value : {});
   const known = new Set((project?.labels ?? []).map((label) => label.id));
-  return [...new Set((Array.isArray(labelIds) ? labelIds : []).filter((id) => known.has(id)))];
+  const members = new Set((project?.members ?? []).map((member) => member.id));
+  return {
+    people: [...new Set((Array.isArray(raw.people) ? raw.people : []).filter((id) => id === NO_ONE || members.has(id)))],
+    labels: [...new Set((Array.isArray(raw.labels) ? raw.labels : []).filter((id) => known.has(id)))],
+  };
 }
-export function cardShown(card, labelIds) {
-  return !labelIds.length || (card.labelIds ?? []).some((id) => labelIds.includes(id));
+// (Étape 1 : filtre par étiquettes seulement ; gardé pour les écrans qui
+// ne regardent que les étiquettes)
+export const cleanLabelFilter = (project, labelIds) => cleanFilter(project, { labels: labelIds }).labels;
+
+export function cardShown(card, filter) {
+  const { people = [], labels = [] } = Array.isArray(filter) ? { labels: filter } : filter ?? {};
+  const assignees = card.assigneeIds ?? [];
+  const personOk = !people.length || people.some((id) => (id === NO_ONE ? !assignees.length : assignees.includes(id)));
+  const labelOk = !labels.length || (card.labelIds ?? []).some((id) => labels.includes(id));
+  return personOk && labelOk;
 }
 
-// Cartes d'une colonne, dans l'ordre, après filtre et recherche
-export function visibleCards(state, project, columnId, { labelIds = [], query = '' } = {}) {
+// Cartes d'une colonne, dans l'ordre, après filtre et recherche (filter :
+// { people, labels } ; labelIds : l'ancienne forme, étiquettes seulement)
+export function visibleCards(state, project, columnId, { filter, labelIds = [], query = '' } = {}) {
+  const chosen = filter ?? { people: [], labels: labelIds };
   return byPosition(liveCards(state, project.id).filter((card) => card.columnId === columnId))
-    .filter((card) => cardShown(card, labelIds) && cardMatches(card, project, query));
+    .filter((card) => cardShown(card, chosen) && cardMatches(card, project, query));
+}
+
+// --- Repères d'une carte (face, maquettes projet-1 et pc-projet-1) ---
+
+// État de l'échéance : null (aucune), 'done' (case « Fait » cochée : la
+// seule marque de « fait »), 'late' (date ou heure passées), 'today',
+// 'later'. today : « AAAA-MM-JJ », now : « HH:MM » (heure de l'appareil).
+export function cardDueState(card, today, now) {
+  if (!card?.dueDate) return null;
+  if (cardDone(card)) return 'done';
+  if (isLate(card.dueDate, card.dueTime, today, now)) return 'late';
+  return card.dueDate === today ? 'today' : 'later';
+}
+
+// Ce que montre la face d'une carte : description présente (seulement
+// quand elle n'a pas de cases : « x/y » le dit déjà, maquette projet-1),
+// « x/y » (cases cochées sur cases), nombre de liens
+export function cardMarkers(card) {
+  const tasks = taskCount(card.description ?? '');
+  return {
+    described: !tasks.total && Boolean(String(card.description ?? '').trim()),
+    tasks: tasks.total ? tasks : null,
+    links: (card.links ?? []).length,
+  };
+}
+
+// --- « Mes cartes » (5.3) : attribuées à moi, pas faites, pas dans une
+// corbeille, dans les projets que je vois ---
+export function myCards(state, meId, projectId = null) {
+  if (meId === null || meId === undefined) return [];
+  const visible = new Set(liveProjects(state).map((project) => project.id));
+  return [...state.cards.values()].filter((card) => !card.deletedAt && visible.has(card.projectId)
+    && (projectId === null || card.projectId === projectId)
+    && (card.assigneeIds ?? []).includes(meId) && !cardDone(card));
+}
+
+// « 2 cartes pour vous · 1 en retard » d'un projet (écran Projets)
+export function myCardCounts(state, meId, projectId, today, now) {
+  const mine = myCards(state, meId, projectId);
+  return { count: mine.length, late: mine.filter((card) => cardDueState(card, today, now) === 'late').length };
+}
+
+// Les plus urgentes de mes cartes (tuile de l'Accueil, 3.3) : en retard
+// d'abord, puis par échéance (les cartes sans échéance après), puis les
+// plus récemment modifiées
+export function urgentCards(state, meId, today, now, limit = 3) {
+  return myCards(state, meId)
+    .map((card) => ({ card, late: cardDueState(card, today, now) === 'late' }))
+    .sort((a, b) => Number(b.late) - Number(a.late)
+      || Number(!a.card.dueDate) - Number(!b.card.dueDate)
+      || (a.card.dueDate ? compareDue(a.card.dueDate, a.card.dueTime, b.card.dueDate, b.card.dueTime) : 0)
+      || String(b.card.updatedAt ?? '').localeCompare(String(a.card.updatedAt ?? '')))
+    .slice(0, limit)
+    .map(({ card }) => card);
 }
 
 // Nombre de cartes d'une étiquette dans le projet (réglages du projet)
@@ -138,18 +221,24 @@ export function saveProjectColumn(projectId, columnId, store = storage) {
   }
 }
 
-// Étiquettes choisies dans le filtre d'un projet
+// Filtre d'un projet ({ people, labels } ; un tableau d'étiquettes gardé
+// par l'étape 1 est relu comme { labels })
 export function loadProjectFilter(projectId, store = storage) {
   try {
     const value = JSON.parse(store()?.getItem(FILTER_PREFIX + projectId) ?? '[]');
-    return Array.isArray(value) ? value.filter((id) => typeof id === 'string') : [];
+    const raw = Array.isArray(value) ? { labels: value } : (value && typeof value === 'object' ? value : {});
+    return {
+      people: (Array.isArray(raw.people) ? raw.people : []).filter((id) => id === NO_ONE || Number.isSafeInteger(id)),
+      labels: (Array.isArray(raw.labels) ? raw.labels : []).filter((id) => typeof id === 'string'),
+    };
   } catch {
-    return [];
+    return emptyFilter();
   }
 }
-export function saveProjectFilter(projectId, labelIds, store = storage) {
+export function saveProjectFilter(projectId, filter, store = storage) {
   try {
-    if (labelIds.length) store()?.setItem(FILTER_PREFIX + projectId, JSON.stringify(labelIds));
+    const value = Array.isArray(filter) ? { people: [], labels: filter } : filter;
+    if (filterCount(value)) store()?.setItem(FILTER_PREFIX + projectId, JSON.stringify(value));
     else store()?.removeItem(FILTER_PREFIX + projectId);
   } catch {
     // stockage indisponible : le filtre vaut pour cette visite
@@ -172,6 +261,6 @@ export function neighbourColumn(project, columnId, direction) {
   return columns[at + direction] ?? null;
 }
 
-// --- Tuile de l'Accueil (étape 1 : les projets récents ; « mes cartes »
-// viendra à l'étape 2) ---
+// --- Tuile de l'Accueil : « mes cartes » (urgentCards) ; projets récents
+// (gardé pour d'autres écrans) ---
 export const homeProjects = (state, limit = 3, compare) => sortedProjects(state, compare).slice(0, limit);

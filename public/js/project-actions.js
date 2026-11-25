@@ -12,12 +12,12 @@
 // En ligne seulement (comme pour les listes) : partager, quitter, supprimer
 // définitivement, vider une corbeille.
 
-import { app, refreshData } from './app.js';
+import { app, refreshData, dataChanged, flushSoon, queuedEntries, replaceQueuedOp, isQueuedSending } from './app.js';
 import { uuid, post, put } from './api.js';
 import { perform } from './actions.js';
 import { copyName } from './format.js';
 import { t } from './i18n.js';
-import { DEFAULT_COLUMNS, PROJECT_NAME_MAX, CARD_TITLE_MAX, afterIdForStep } from './projects.js';
+import { DEFAULT_COLUMNS, PROJECT_NAME_MAX, CARD_TITLE_MAX, CARD_DESCRIPTION_MAX, afterIdForStep, cleanDescription } from './projects.js';
 import { columnCards } from './project-store.js';
 
 const enc = encodeURIComponent;
@@ -139,12 +139,15 @@ export function stepCard(cardId, direction) {
 }
 export const deleteCard = (cardId) => perform({ type: 'card.delete', cardId });
 export const restoreCard = (cardId) => perform({ type: 'card.restore', cardId });
-// Dupliquer : juste dessous, « (copie) », à moi. Renvoie l'identifiant.
+// Dupliquer : juste dessous, « (copie) », à moi, avec sa description, ses
+// liens (nouveaux identifiants, choisis ici), son échéance (« Fait »
+// décoché). Renvoie l'identifiant.
 export async function duplicateCard(cardId) {
   const card = app.data.cards.get(cardId);
   if (!card) return null;
   const newCardId = uuid();
-  await perform({ type: 'card.duplicate', cardId, newCardId, title: copyName(card.title, CARD_TITLE_MAX) });
+  const linkIds = Object.fromEntries((card.links ?? []).map((link) => [link.id, uuid()]));
+  await perform({ type: 'card.duplicate', cardId, newCardId, title: copyName(card.title, CARD_TITLE_MAX), ...(Object.keys(linkIds).length ? { linkIds } : {}) });
   return newCardId;
 }
 export const setCardLabels = (cardId, labelIds) => perform({ type: 'card.labels', cardId, labelIds });
@@ -156,4 +159,91 @@ export async function purgeCards(projectId, cardIds) {
   const result = await post(`/api/projects/${enc(projectId)}/cards/purge`, { cardIds });
   await refreshData({ quiet: true });
   return result;
+}
+
+// --- Détails d'une carte (étape 2) ---
+
+// Échéance : { date, time, remindBefore } (heure et rappel facultatifs), ou
+// null pour la retirer (avec « Fait »)
+export const setCardDue = (cardId, due) => perform({ type: 'card.update', cardId, due });
+// Case « Fait » de l'échéance
+export const setCardDone = (cardId, done) => perform({ type: 'card.done', cardId, done });
+// Priorité (option « Priorité » du projet) : 'low', 'normal', 'high'
+export const setCardPriority = (cardId, priority) => perform({ type: 'card.update', cardId, priority });
+
+// Liens : titre facultatif, adresse http ou https
+export const addCardLink = (cardId, { title, url }) => perform({ type: 'link.create', cardId, linkId: uuid(), title, url });
+export const updateCardLink = (cardId, linkId, change) => perform({ type: 'link.update', cardId, linkId, ...change });
+export const removeCardLink = (cardId, linkId) => perform({ type: 'link.delete', cardId, linkId });
+
+// Cocher ou décocher UNE case de la description (sans passer en saisie) :
+// son numéro et son texte ; seule cette case change, même si quelqu'un en
+// coche une autre au même moment
+export const tickCardTask = (cardId, { index, text, checked }) => perform({ type: 'card.task', cardId, index, text, checked });
+
+// --- Description : enregistrement automatique, version, conflit (comme
+// les notes, actions.js) ---
+
+// Dernier enregistrement de la description de cette carte encore en file
+function lastQueuedDescription(cardId) {
+  return queuedEntries().filter((entry) => entry.kind === 'op' && entry.op.cardId === cardId && entry.op.type === 'card.describe').at(-1) ?? null;
+}
+// Vrai si un enregistrement de la description attend encore d'être envoyé
+export const cardDescriptionPending = (cardId) => Boolean(lastQueuedDescription(cardId));
+
+// Enregistre la description. baseVersion : la version sur laquelle l'écran
+// a écrit. Renvoie 'queued' (parti dans la file), 'conflict' (la
+// description a changé entre-temps, ou était déjà « À vérifier » : mon
+// texte est gardé sur ce téléphone jusqu'à mon choix, rien n'est envoyé) ou
+// 'gone'. Enregistrements rapprochés : le précédent, pas encore parti, est
+// remplacé ; sinon le nouveau le suit (afterOp : refusé si le précédent
+// l'est).
+export async function saveCardDescription(cardId, { description, baseVersion }) {
+  const card = app.data.cards.get(cardId);
+  if (!card || card.deletedAt) return 'gone';
+  const text = String(description ?? '').slice(0, CARD_DESCRIPTION_MAX);
+  const kept = app.data.cardConflicts.get(cardId);
+  if (kept || card.descriptionVersion !== baseVersion) {
+    app.data.cardConflicts.set(cardId, { ...(kept ?? {}), description: text, at: new Date().toISOString() });
+    dataChanged();
+    return 'conflict';
+  }
+  const previous = lastQueuedDescription(cardId);
+  if (previous && !isQueuedSending(previous.seq) && await replaceQueuedOp(previous.seq, { ...previous.op, description: text })) {
+    app.data.cards.set(cardId, { ...card, description: cleanDescription(text) ?? card.description, updatedAt: new Date().toISOString() });
+    dataChanged();
+    flushSoon();
+    return 'queued';
+  }
+  await perform({ type: 'card.describe', cardId, description: text, baseVersion: card.descriptionVersion, ...(previous ? { afterOp: previous.op.id } : {}) });
+  return 'queued';
+}
+
+// « Garder la mienne » : mon texte est enregistré sur la version actuelle
+export async function keepMyCardDescription(cardId) {
+  const kept = app.data.cardConflicts.get(cardId);
+  const card = app.data.cards.get(cardId);
+  if (!kept || !card) return;
+  app.data.cardConflicts.delete(cardId);
+  await perform({ type: 'card.describe', cardId, description: kept.description, baseVersion: card.descriptionVersion });
+}
+
+// « Prendre la leur » : mon texte est abandonné (après confirmation)
+export function takeTheirCardDescription(cardId) {
+  app.data.cardConflicts.delete(cardId);
+  dataChanged();
+}
+
+// « Garder les deux » : ma version est ajoutée SOUS la leur, après une
+// ligne « Version de Guillaume, 25 nov. 21:04 » (heading : cette ligne,
+// écrite par l'écran dans sa langue) ; le tout tronqué à la taille
+// permise
+export async function keepBothCardDescriptions(cardId, heading) {
+  const kept = app.data.cardConflicts.get(cardId);
+  const card = app.data.cards.get(cardId);
+  if (!kept || !card) return;
+  app.data.cardConflicts.delete(cardId);
+  const theirs = card.description ?? '';
+  const joined = `${theirs}${theirs && !theirs.endsWith('\n') ? '\n' : ''}${theirs ? '\n' : ''}${heading}\n${kept.description}`.slice(0, CARD_DESCRIPTION_MAX);
+  await perform({ type: 'card.describe', cardId, description: joined, baseVersion: card.descriptionVersion });
 }

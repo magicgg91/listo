@@ -280,6 +280,9 @@ const OPTION_OFF = ['ops.prioriteDesactivee', 'ops.echeanceDesactivee'];
 // Note enregistrée sur une version dépassée (server/notes.js) : pas de
 // message d'erreur, la note passe « À vérifier » (markNoteConflict)
 const NOTE_CONFLICT = 'ops.noteConflit';
+// Description d'une carte enregistrée sur une version dépassée
+// (server/projects.js) : de même, la carte passe « À vérifier »
+const CARD_CONFLICT = 'ops.carteConflit';
 export function refreshData({ quiet = false, full = false } = {}) {
   if (refreshing) {
     again = { full: Boolean(again?.full || full) };
@@ -309,11 +312,13 @@ export function refreshData({ quiet = false, full = false } = {}) {
       let readOnlyRefused = false;
       let optionRefused = false;
       let noteConflict = false;
+      let cardConflict = false;
       if (refusals.length) {
         readOnlyRefused = refusals.some(({ code }) => code === READ_ONLY);
         optionRefused = refusals.some(({ code }) => OPTION_OFF.includes(code));
         noteConflict = refusals.some(({ code }) => code === NOTE_CONFLICT);
-        const [first, ...others] = refusals.filter(({ code }) => code !== READ_ONLY && code !== NOTE_CONFLICT && !OPTION_OFF.includes(code)).map(({ message }) => message);
+        cardConflict = refusals.some(({ code }) => code === CARD_CONFLICT);
+        const [first, ...others] = refusals.filter(({ code }) => code !== READ_ONLY && code !== NOTE_CONFLICT && code !== CARD_CONFLICT && !OPTION_OFF.includes(code)).map(({ message }) => message);
         refusals = [];
         full = true;
         if (first) toast(others.length ? t('application.refus.etAutres', { message: first, count: others.length }) : t('application.refus', { message: first }));
@@ -345,6 +350,9 @@ export function refreshData({ quiet = false, full = false } = {}) {
       // Note « À vérifier » : l'écran de la note ouverte propose le choix ;
       // ailleurs, un message dit de l'ouvrir
       else if (noteConflict && app.route?.name !== 'note' && !app.route?.params?.note) toast(t('application.noteAVerifier'));
+      // Description d'une carte « À vérifier » : même chose (l'écran de la
+      // carte propose le choix)
+      else if (cardConflict && app.route?.name !== 'projectCard') toast(t('application.carteAVerifier'));
       // Page Notifications reçue : celles de l'écran ouvert deviennent lues
       readInboxOfScreen();
     } catch (error) {
@@ -397,6 +405,7 @@ function makeQueue() {
       changed: () => setPendingCount(queue?.count() ?? 0),
       refused: (entry, message, code, result) => {
         if (code === NOTE_CONFLICT) markNoteConflict(entry.op, result?.current);
+        if (code === CARD_CONFLICT) markCardConflict(entry.op, result?.current);
         refusals.push({ message, code });
       },
       dropped: () => {},
@@ -417,6 +426,22 @@ function markNoteConflict(op, current = null) {
   app.data.noteConflicts.set(op.noteId, {
     title: op.title ?? kept?.title ?? note?.title ?? '',
     body: op.body ?? kept?.body ?? note?.body ?? '',
+    at: new Date().toISOString(),
+    byId: current?.updatedBy ?? kept?.byId ?? null,
+    byName: current?.updatedByName ?? kept?.byName ?? null,
+  });
+  dataChanged();
+}
+
+// Enregistrement de la description d'une carte refusé (elle a changé
+// entre-temps) : comme une note, mon texte est gardé sur ce téléphone et
+// la carte passe « À vérifier » jusqu'à mon choix (screens/project-card.js)
+function markCardConflict(op, current = null) {
+  if (op.type !== 'card.describe' || !app.data.cardConflicts) return;
+  const card = app.data.cards.get(op.cardId);
+  const kept = app.data.cardConflicts.get(op.cardId);
+  app.data.cardConflicts.set(op.cardId, {
+    description: op.description ?? kept?.description ?? card?.description ?? '',
     at: new Date().toISOString(),
     byId: current?.updatedBy ?? kept?.byId ?? null,
     byName: current?.updatedByName ?? kept?.byName ?? null,

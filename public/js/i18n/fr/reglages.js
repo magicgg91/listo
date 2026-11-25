@@ -60,6 +60,8 @@ export default {
   'reglages.fonctions': 'Fonctions',
   'reglages.fonctions.detail': 'Notes, Projets',
   'reglages.fonctions.intro': 'Choisissez les fonctions que vous utilisez. Une fonction coupée disparaît de vos écrans ; rien n\'est effacé.',
+  'reglages.fonctions.listes': 'Listes',
+  'reglages.fonctions.listes.detail': 'Courses, tâches et envies, avec Échéances et « À offrir ».',
   'reglages.fonctions.notes': 'Notes',
   'reglages.fonctions.notes.detail': 'Des textes libres, à garder pour soi ou à partager.',
   'reglages.fonctions.projets': 'Projets',
@@ -71,6 +73,10 @@ export default {
   'reglages.fonctions.detail.notes': 'Notes',
   'reglages.fonctions.detail.projets': 'Projets',
   'reglages.fonctions.detail.aucune': 'Aucune pour l\'instant',
+  'reglages.fonctions.detail.listes': 'Listes',
+  'reglages.fonctions.detail.listesNotes': 'Listes, Notes',
+  'reglages.fonctions.detail.listesProjets': 'Listes, Projets',
+  'reglages.fonctions.detail.tout': 'Listes, Notes, Projets',
 
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Raccourcis à une touche activés',

@@ -283,10 +283,10 @@ function accountTile() {
 // Compte : « Bienvenue, Max », une phrase qui nomme la fonction à allumer
 // (s'il n'y en a qu'une) et le bouton « Ouvrir Réglages › Fonctions ».
 // Rien d'autorisé : la phrase seule (l'Admin s'en charge). La règle :
-// welcomeHint (access.js). À l'étape 2 du cadrage, les Listes sont encore
-// toujours là : elle n'apparaît pas encore.
-const HINT_ICONS = { projects: 'kanban', notes: 'note' };
-const HINT_TEXTS = { projects: 'accueil.bienvenue.projets', notes: 'accueil.bienvenue.notes' };
+// welcomeHint (access.js). Un Admin et un Utilisateur ont toujours les
+// Listes : seul un invité la voit (étape 3 du cadrage).
+const HINT_ICONS = { projects: 'kanban', notes: 'note', lists: 'tasks' };
+const HINT_TEXTS = { projects: 'accueil.bienvenue.projets', notes: 'accueil.bienvenue.notes', lists: 'accueil.bienvenue.listes' };
 function welcomeCard(hint) {
   const text = hint.kind === 'one' ? t(HINT_TEXTS[hint.feature]) : t(hint.kind === 'several' ? 'accueil.bienvenue.plusieurs' : 'accueil.bienvenue.aucune');
   return h('section', { class: 'card home-hint', 'aria-labelledby': 'accueil-bienvenue' },
@@ -339,7 +339,7 @@ export function renderHome(onLeave) {
     const layout = tileLayout(present.map(([name]) => name));
     present.forEach(([, el], i) => el.classList.toggle('tile--wide', layout[i].wide));
     // Aucune fonction utilisée : l'invitation en tête (access.js, welcomeHint)
-    const hint = welcomeHint(app.data.features, allowedNow(), { lists: true });
+    const hint = welcomeHint(shownFeatures(), allowedNow());
     replace(tiles, hint ? welcomeCard(hint) : null, present.map(([, el]) => el));
     fit.update();
   };

@@ -118,6 +118,9 @@ export function createPcSide() {
     onMousedown: keepFieldFocus.mousedown,
     onClick: () => setQuery(''),
   }, icon('x-circle'));
+  // Le champ (caché pour un invité sans « Listes » : il ne cherche que des
+  // listes)
+  const searchField = h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton, keycap('/'));
   // Nombre de listes trouvées, annoncé aux lecteurs d'écran
   const status = h('p', { class: 'visually-hidden', role: 'status' });
   const setQuery = (value) => {
@@ -227,6 +230,16 @@ export function createPcSide() {
     if (notes === null) notesLink.removeAttribute('aria-label');
     else notesLink.setAttribute('aria-label', t(notesNew ? 'notes.nav.nombre.nouveautes' : 'navigation.notes.nombre', { count: notes }));
     markCurrent(notesLink, NOTE_SCREENS.includes(selected.name));
+    // Listes non utilisées (un invité sans « Listes », docs/cadrage-
+    // comptes.md, étape 3) : ni « Listes », ni « Nouvelle liste », ni
+    // recherche des listes, ni « Types »
+    const listsUsed = shownFeatures().lists;
+    listsLink.hidden = !listsUsed;
+    searchField.hidden = !listsUsed;
+    if (!listsUsed && input.value) {
+      input.value = '';
+      clearButton.hidden = true;
+    }
     // Notes coupées (Réglages › Fonctions) : ni « Notes », ni « Nouvelle note »
     const notesUsed = notesOn(app.data.features);
     notesLink.hidden = !notesUsed;
@@ -247,7 +260,7 @@ export function createPcSide() {
     // « Nouveau projet » : seulement avec « Peut créer ses propres
     // projets » (case de l'Admin, docs/cadrage-comptes.md, étape 2)
     newProject.hidden = !onProjects || canAdd || !canCreateProjects();
-    newList.hidden = onProjects || (notesUsed && NOTE_SCREENS.includes(selected.name));
+    newList.hidden = !listsUsed || onProjects || (notesUsed && NOTE_SCREENS.includes(selected.name));
     newNote.hidden = onProjects || !(notesUsed && NOTE_SCREENS.includes(selected.name));
   };
   const stopDay = watchNewDay(drawFixed);
@@ -375,8 +388,9 @@ export function createPcSide() {
           : h('p', { class: 'pc-nav__empty' }, t('navigation.projets.aucun')));
       return;
     }
-    // Autres écrans : seulement les entrées fixes
-    if (!LIST_SCREENS.includes(selected.name)) {
+    // Autres écrans : seulement les entrées fixes (et rien des listes pour
+    // un compte qui ne les utilise pas)
+    if (!LIST_SCREENS.includes(selected.name) || !shownFeatures().lists) {
       showNav(false);
       replace(nav);
       return;
@@ -403,7 +417,7 @@ export function createPcSide() {
     h('div', { class: 'pc-brand' }, home, h('button', {
       class: 'icon-btn', type: 'button', 'aria-label': t('navigation.raccourcis'), 'aria-haspopup': 'dialog', 'aria-keyshortcuts': '?', 'data-pc-tip': t('navigation.raccourcis.infobulle'), onClick: () => openShortcuts(),
     }, icon('help'))),
-    h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton, keycap('/')),
+    searchField,
     status,
     main,
     nav,

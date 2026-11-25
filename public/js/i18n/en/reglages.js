@@ -60,6 +60,8 @@ export default {
   'reglages.fonctions': 'Features',
   'reglages.fonctions.detail': 'Notes, Projects',
   'reglages.fonctions.intro': 'Choose the features you use. A feature you turn off disappears from your screens; nothing is deleted.',
+  'reglages.fonctions.listes': 'Lists',
+  'reglages.fonctions.listes.detail': 'Shopping, tasks and wishes, with Due and “To give”.',
   'reglages.fonctions.notes': 'Notes',
   'reglages.fonctions.notes.detail': 'Free-form texts, to keep for yourself or to share.',
   'reglages.fonctions.projets': 'Projects',
@@ -71,6 +73,10 @@ export default {
   'reglages.fonctions.detail.notes': 'Notes',
   'reglages.fonctions.detail.projets': 'Projects',
   'reglages.fonctions.detail.aucune': 'None for now',
+  'reglages.fonctions.detail.listes': 'Lists',
+  'reglages.fonctions.detail.listesNotes': 'Lists, Notes',
+  'reglages.fonctions.detail.listesProjets': 'Lists, Projects',
+  'reglages.fonctions.detail.tout': 'Lists, Notes, Projects',
 
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Single-key shortcuts enabled',

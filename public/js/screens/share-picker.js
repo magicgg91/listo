@@ -111,9 +111,11 @@ export function peoplePicker({ me, users, members, beneficiaryId = null, note = 
     if (beneficiary && lockedBeneficiary) return lockedRow(person, person.displayName, t('partage.personnes.destinataire'));
     const box = h('span', { class: 'tick' });
     // N'utilise pas la fonction (case de l'Admin) : grisée, sauf déjà membre
-    const unused = !guests.has(person.id) && ((note && person.uses?.notes === false) || (project && person.uses?.projects === false));
+    // (une liste : un invité à qui l'Admin n'a pas ouvert les listes)
+    const feature = project ? 'projects' : note ? 'notes' : 'lists';
+    const unused = !guests.has(person.id) && person.uses?.[feature] === false;
     const sub = !person.active ? t('partage.personnes.desactive')
-      : unused ? t(note ? 'partage.personnes.sansNotes' : 'partage.personnes.sansProjets')
+      : unused ? t({ lists: 'partage.personnes.sansListes', notes: 'partage.personnes.sansNotes', projects: 'partage.personnes.sansProjets' }[feature])
         : beneficiary ? t('partage.personnes.destinataire') : null;
     // Un invité, dans l'annuaire de l'Admin seulement (rôle envoyé à lui seul)
     const discreet = person.role === 'guest' && person.active

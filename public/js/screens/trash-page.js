@@ -28,9 +28,9 @@
 import { h, replace } from '../dom.js';
 import { app, onDataChange } from '../app.js';
 import { navigate, goBack, replaceAddress } from '../router.js';
-import { notesOn, projectsOn } from '../features.js';
+import { notesOn, projectsOn, listsOn } from '../features.js';
 import { t } from '../i18n.js';
-import { trashTabs, defaultTrashTab } from '../trash-tabs.js';
+import { trashTabs, defaultTrashTab, singleTrash } from '../trash-tabs.js';
 import { topbar } from './settings.js';
 import { listTrash } from './trash.js';
 import { noteTrash } from './note-trash.js';
@@ -45,13 +45,18 @@ const TAB_TEXTS = {
 };
 // Fonction (Réglages › Fonctions) dont la page dépend : changée, la page
 // est refaite
-const featuresKey = () => JSON.stringify([notesOn(app.data.features), projectsOn(app.data.features)]);
+const featuresKey = () => JSON.stringify([notesOn(app.data.features), projectsOn(app.data.features), listsUsed()]);
+// Listes utilisées (un invité peut ne pas les avoir ; toujours pour un
+// Admin et un Utilisateur)
+const listsUsed = () => app.user?.role !== 'guest' || listsOn(app.data.features);
 
 // tab : l'onglet demandé par l'adresse (« listes », « notes »,
 // « projets »), ou null pour l'onglet de départ
 export function renderTrash(tab, onLeave) {
   const withNotes = notesOn(app.data.features);
-  const tabs = trashTabs(withNotes, projectsOn(app.data.features));
+  const withProjects = projectsOn(app.data.features);
+  const withLists = listsUsed();
+  const tabs = trashTabs(withNotes, withProjects, withLists);
   const shownFeatures = featuresKey();
   let alive = true;
   onLeave(() => {
@@ -70,9 +75,12 @@ export function renderTrash(tab, onLeave) {
   const body = h('div', { class: 'body body--flush' });
   const header = topbar(t('corbeille.titre'), () => goBack('settings'));
 
-  // Notes et projets coupés : la corbeille des listes seule, sans onglets
+  // Une seule fonction utilisée (le plus souvent les listes, notes et
+  // projets coupés ; ou les projets seuls d'un invité) : sa corbeille,
+  // sans onglets ; aucune : une phrase
   if (!tabs.length) {
-    replace(body, listTrash(onLeave).panel);
+    const only = { listes: () => listTrash(onLeave), notes: () => noteTrash(onLeave, () => {}), projets: () => projectTrash(onLeave, () => {}) }[singleTrash(withNotes, withProjects, withLists)];
+    replace(body, only ? only().panel : h('p', { class: 'page-intro' }, t('corbeille.vide.aucune')));
     return h('div', { class: 'screen' }, header, body);
   }
 
@@ -113,7 +121,11 @@ export function renderTrash(tab, onLeave) {
     // onglet compte pour vide)
     const notes = panels.notes ? panels.notes.count() : 0;
     const projects = panels.projets ? panels.projets.count() : 0;
-    if ((notes === 0 && projects === 0) || listsTried) show(defaultTrashTab({ lists: panels.listes?.count() ?? null, notes, projects }));
+    const lists = panels.listes ? panels.listes.count() : 0;
+    if ((notes === 0 && projects === 0) || listsTried) {
+      const wanted = defaultTrashTab({ lists, notes, projects });
+      show(tabs.includes(wanted) ? wanted : tabs[0]);
+    }
   };
 
   const changed = () => {
@@ -135,10 +147,12 @@ export function renderTrash(tab, onLeave) {
   }
   const nav = h('nav', { class: 'tabs trash-tabs', 'aria-label': t('corbeille.onglets') }, tabs.map((key) => buttons[key]));
 
-  panels.listes = listTrash(onLeave, () => {
-    listsTried = true;
-    changed();
-  });
+  if (tabs.includes('listes')) {
+    panels.listes = listTrash(onLeave, () => {
+      listsTried = true;
+      changed();
+    });
+  } else listsTried = true;
   if (tabs.includes('notes')) panels.notes = noteTrash(onLeave, changed);
   if (tabs.includes('projets')) panels.projets = projectTrash(onLeave, changed);
   for (const key of tabs) panels[key].panel.hidden = true;

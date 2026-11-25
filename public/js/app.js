@@ -713,6 +713,9 @@ startShortcuts({
   notesOn: () => notesOn(app.data.features),
   // Projets coupés (le départ) : pas de groupe « Projet » dans les raccourcis
   projectsOn: () => projectsOn(app.data.features),
+  // Listes non utilisées (un invité sans « Listes ») : ni groupe « Liste »,
+  // ni [ et ], et N ne crée pas de liste
+  listsOn: () => shownFeatures().lists,
 });
 desktop.addEventListener('change', () => {
   // Fenêtres ouvertes refermées d'abord (tiroir, fenêtre centrée, feuille),
@@ -969,7 +972,7 @@ function show(route) {
     // fonction coupée : la Corbeille sans onglet dans l'adresse
     case 'trash': mount((onLeave) => renderTrash(null, onLeave)); break;
     case 'trashTab': {
-      const tab = askedTrashTab(params.tab, notesOn(app.data.features), projectsOn(app.data.features));
+      const tab = askedTrashTab(params.tab, notesOn(app.data.features), projectsOn(app.data.features), shownFeatures().lists);
       if (tab) mount((onLeave) => renderTrash(tab, onLeave));
       else navigate('trash', {}, { replace: true });
       break;

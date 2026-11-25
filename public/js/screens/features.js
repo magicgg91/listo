@@ -4,9 +4,9 @@
 // migration 41). Chaque changement part tout de suite par la file
 // d'attente (copie locale, puis serveur) : hors ligne compris.
 //
-// - Une phrase d'explication, puis une ligne par fonction (« Notes »,
-//   « Projets », coupés au départ) : son nom, une phrase dessous, un
-//   interrupteur.
+// - Une phrase d'explication, puis une ligne par fonction (« Listes » pour
+//   un invité seulement, « Notes », « Projets », coupés au départ) : son
+//   nom, une phrase dessous, un interrupteur.
 // - Une fonction coupée disparaît des écrans de la personne (bandeau du bas,
 //   Accueil, menu de gauche, nouveautés, notifications) ; rien n'est effacé.
 // - D'autres fonctions pourront s'ajouter : une entrée dans FEATURE_INFO
@@ -23,13 +23,14 @@ import { goBack } from '../router.js';
 import { app, onDataChange, allowedNow } from '../app.js';
 import * as actions from '../actions.js';
 import { drawWhenIdle } from '../ui.js';
-import { FEATURES, normalizeFeatures } from '../features.js';
+import { FEATURES, normalizeFeatures, offeredFeatures } from '../features.js';
 import { topbar } from './settings.js';
 import { t } from '../i18n.js';
 
 // Chaque fonction : son nom et la phrase dessous (lus au moment
 // d'afficher : la langue est alors choisie)
 const FEATURE_INFO = {
+  lists: { name: () => t('reglages.fonctions.listes'), sub: () => t('reglages.fonctions.listes.detail') },
   notes: { name: () => t('reglages.fonctions.notes'), sub: () => t('reglages.fonctions.notes.detail') },
   projects: { name: () => t('reglages.fonctions.projets'), sub: () => t('reglages.fonctions.projets.detail') },
 };
@@ -64,8 +65,11 @@ export function renderFeatures(onLeave = () => {}) {
   function draw() {
     const features = normalizeFeatures(app.data.features);
     const allowed = allowedNow();
-    const offered = FEATURES.filter((name) => allowed[name]);
-    const limited = offered.length < FEATURES.length || app.user?.role === 'guest';
+    // (« Listes » : un invité seulement ; un Admin et un Utilisateur les
+    // ont toujours, sans ligne)
+    const role = app.user?.role;
+    const offered = offeredFeatures(allowed, role);
+    const limited = role === 'guest' || offered.length < FEATURES.filter((name) => name !== 'lists').length;
     const key = JSON.stringify([features, offered, limited]);
     if (key === drawn) return;
     drawn = key;

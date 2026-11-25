@@ -119,10 +119,15 @@ export function renderSettings() {
 const homeRow = () => row({ iconName: 'home', title: t('reglages.accueil'), sub: t('reglages.accueil.detail'), onClick: () => navigate('homeSettings') });
 // Sous « Fonctions » : celles que l'Admin autorise à ce compte (« Notes,
 // Projets », « Projets »… ; docs/cadrage-comptes.md, étape 2)
-const FEATURE_DETAIL = { 'notes,projects': 'reglages.fonctions.detail', notes: 'reglages.fonctions.detail.notes', projects: 'reglages.fonctions.detail.projets', '': 'reglages.fonctions.detail.aucune' };
+// (« Listes » nommées pour un invité seulement : les autres les ont toujours)
+const FEATURE_DETAIL = {
+  'notes,projects': 'reglages.fonctions.detail', notes: 'reglages.fonctions.detail.notes', projects: 'reglages.fonctions.detail.projets', '': 'reglages.fonctions.detail.aucune',
+  lists: 'reglages.fonctions.detail.listes', 'lists,notes': 'reglages.fonctions.detail.listesNotes', 'lists,projects': 'reglages.fonctions.detail.listesProjets', 'lists,notes,projects': 'reglages.fonctions.detail.tout',
+};
 const featuresDetail = () => {
   const allowed = allowedNow();
-  return t(FEATURE_DETAIL[['notes', 'projects'].filter((name) => allowed[name]).join(',')]);
+  const names = app.user?.role === 'guest' ? ['lists', 'notes', 'projects'] : ['notes', 'projects'];
+  return t(FEATURE_DETAIL[names.filter((name) => allowed[name]).join(',')]);
 };
 const featuresRow = () => row({ iconName: 'layers', title: t('reglages.fonctions'), sub: featuresDetail(), onClick: () => navigate('features') });
 function generalRows(isAdmin) {

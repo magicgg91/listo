@@ -51,6 +51,7 @@ export default {
   'accueil.bienvenue.titre': 'Bienvenue, {name}',
   'accueil.bienvenue.projets': 'Votre compte est prêt. Allumez les projets dans Réglages › Fonctions pour voir ceux qu\'on vous partage.',
   'accueil.bienvenue.notes': 'Votre compte est prêt. Allumez les notes dans Réglages › Fonctions pour voir celles qu\'on vous partage.',
+  'accueil.bienvenue.listes': 'Votre compte est prêt. Allumez les listes dans Réglages › Fonctions pour voir celles qu\'on vous partage.',
   'accueil.bienvenue.plusieurs': 'Votre compte est prêt. Allumez une fonction dans Réglages › Fonctions pour commencer.',
   'accueil.bienvenue.aucune': 'Votre compte est prêt. L\'Admin ne vous a encore ouvert aucune fonction : il s\'en charge.',
   'accueil.bienvenue.bouton': 'Ouvrir Réglages › Fonctions',

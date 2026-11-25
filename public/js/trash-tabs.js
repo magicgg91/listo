@@ -13,16 +13,30 @@
 // Un onglet par fonction utilisée (Réglages › Fonctions) : notes coupées,
 // pas d'onglet « Notes » ; projets coupés (c'est le départ), pas d'onglet
 // « Projets » ; l'adresse d'un onglet absent mène à la Corbeille sans
-// onglet. Seule la corbeille des listes : pas d'onglets du tout.
+// onglet. Seule la corbeille des listes : pas d'onglets du tout. Un invité
+// sans « Listes » (docs/cadrage-comptes.md, étape 3) : pas d'onglet
+// « Listes » ; s'il ne reste qu'une corbeille (ses projets, par exemple),
+// elle s'affiche seule, sans onglets (singleTrash).
 
 // Les onglets, dans l'ordre de l'écran (noms écrits dans l'adresse)
 export const TRASH_TABS = ['listes', 'notes', 'projets'];
 
+// Corbeilles des fonctions utilisées : « Listes » (sauf un invité sans
+// Listes), « Notes », « Projets »
+const usedTrashes = (notes, projects, lists) => TRASH_TABS.filter((tab) => (tab === 'listes' && lists) || (tab === 'notes' && notes) || (tab === 'projets' && projects));
+
 // Onglets proposés : « Listes », puis « Notes » et « Projets » selon les
-// fonctions utilisées ; aucun s'il ne reste que « Listes »
-export function trashTabs(notes, projects = false) {
-  const tabs = TRASH_TABS.filter((tab) => tab === 'listes' || (tab === 'notes' && notes) || (tab === 'projets' && projects));
+// fonctions utilisées ; aucun s'il ne reste qu'une corbeille
+export function trashTabs(notes, projects = false, lists = true) {
+  const tabs = usedTrashes(notes, projects, lists);
   return tabs.length > 1 ? tabs : [];
+}
+
+// La corbeille affichée seule, sans onglets (quand trashTabs n'en propose
+// pas) : celle de la seule fonction utilisée, « Listes » d'abord ; null
+// quand aucune fonction n'est utilisée (la page le dit)
+export function singleTrash(notes, projects = false, lists = true) {
+  return usedTrashes(notes, projects, lists)[0] ?? null;
 }
 
 // Onglet de départ, quand l'adresse n'en donne pas : « Listes », sauf si la
@@ -39,7 +53,7 @@ export function defaultTrashTab({ lists = null, notes = null, projects = null } 
 // Onglet demandé par l'adresse (#/reglages/corbeille/<onglet>) : celui à
 // ouvrir, ou null pour revenir à #/reglages/corbeille (onglet inconnu, ou
 // d'une fonction coupée). « listes » s'ouvre toujours.
-export function askedTrashTab(tab, notes, projects = false) {
-  if (tab === 'listes') return 'listes';
-  return trashTabs(notes, projects).includes(tab) ? tab : null;
+export function askedTrashTab(tab, notes, projects = false, lists = true) {
+  if (tab === 'listes' && lists) return 'listes';
+  return trashTabs(notes, projects, lists).includes(tab) ? tab : null;
 }

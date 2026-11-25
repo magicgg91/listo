@@ -21,7 +21,7 @@ import { aislesForStore, offeredAisles, rematchAisle } from './aisles.js';
 import { NOTE_TITLE_MAX, NOTE_BODY_MAX } from './notes.js';
 import { cleanLabelIds } from './labels.js';
 import { normalizeHome, homeChangeProblem, applyHomeChange } from './home-tiles.js';
-import { normalizeFeatures, featuresChangeProblem, applyFeaturesChange, notesOn, projectsOn } from './features.js';
+import { normalizeFeatures, featuresChangeProblem, applyFeaturesChange, notesOn, projectsOn, listsOn } from './features.js';
 import { emptyProjects, projectsSnapshot, projectsFromSnapshot, loadProjects, applyProjectOp, PROJECT_OP_TYPES } from './project-store.js';
 
 // --- État vide ---
@@ -297,6 +297,9 @@ export function mergeSync(state, data) {
   if (data.features) {
     if (projectsOn(data.features) && !projectsOn(state.features)) state.projectsReload = true;
     if (notesOn(data.features) && !notesOn(state.features)) state.projectsReload = true;
+    // Listes rallumées (un invité ; docs/cadrage-comptes.md, étape 3) : de
+    // même, le serveur n'en envoyait rien
+    if (listsOn(data.features) && !listsOn(state.features)) state.projectsReload = true;
     state.features = normalizeFeatures(data.features);
   }
   if (data.allowed) state.allowed = { ...data.allowed };
@@ -316,6 +319,8 @@ export function mergeSync(state, data) {
     if (index >= 0) state.history[index] = entry;
     else state.history.push(entry);
   }
+  // Listes non utilisées : la mémoire des articles est oubliée aussi
+  if (!listsOn(state.features)) state.history = [];
   return state;
 }
 
@@ -451,8 +456,9 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       // (une fonction que l'Admin ne m'a pas autorisée : refusée ici aussi)
       if (featuresChangeProblem(change, state.allowed)) return;
       const next = applyFeaturesChange(state.features, change);
-      // Projets rallumés : la prochaine synchronisation recharge tout
+      // Projets (ou listes) rallumés : la prochaine synchronisation recharge tout
       if (projectsOn(next) && !projectsOn(state.features)) state.projectsReload = true;
+      if (listsOn(next) && !listsOn(state.features)) state.projectsReload = true;
       state.features = next;
       return;
     }
@@ -664,8 +670,11 @@ export function inboxShownRows(state) {
   const rows = state.inbox?.rows ?? [];
   const notes = notesOn(state.features);
   const projects = projectsOn(state.features);
+  // (listes : un invité sans « Listes » ; le serveur les cache déjà)
+  const lists = listsOn(state.features);
   return rows.filter((row) => (notes || row.targetType !== 'note')
-    && (projects || !['project', 'card'].includes(row.targetType) || row.kind === 'sharing'));
+    && (projects || !['project', 'card'].includes(row.targetType) || row.kind === 'sharing')
+    && (lists || !['list', 'item'].includes(row.targetType) || row.kind === 'sharing'));
 }
 
 // Nombre de notifications non lues (pastille de la cloche)

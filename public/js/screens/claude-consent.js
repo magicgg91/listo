@@ -146,7 +146,7 @@ function confirmFirst(id, request, failed) {
       deny));
 }
 
-function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'password', confirmed = false }) {
+function consentForm(id, { request, account, twoFactor, lists, listsUsed = true, confirmWith = 'password', confirmed = false }) {
   const viaProvider = confirmWith === 'authelia';
   // Retour du fournisseur d'identité : #/autoriser/<demande>?authelia=confirme ou non-confirme
   const back = new URLSearchParams(String(location.hash).split('?')[1] ?? '').get('authelia');
@@ -189,10 +189,14 @@ function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'pa
     scopeHint,
     editWarning);
 
-  // Listes : toutes, ou une sélection
+  // Listes : toutes, ou une sélection. Un compte sans Listes (un invité,
+  // docs/cadrage-comptes.md, 4.3) : pas de choix, une phrase (l'assistant
+  // ne verra que ses notes et ses projets, s'il les utilise)
   const picker = h('div', { class: 'card card--clip', hidden: true },
     lists.length ? lists.map((list) => listTick(list, chosen)) : h('p', { class: 'muted' }, t('claude.autoriser.aucuneListe')));
-  const listsField = h('div', { class: 'field' },
+  const listsField = !listsUsed ? h('div', { class: 'field' },
+    h('span', { class: 'field__label' }, t('claude.autoriser.listes')),
+    h('p', {}, t('claude.autoriser.sansListes'))) : h('div', { class: 'field' },
     h('span', { class: 'field__label', id: 'consent-lists' }, t('claude.autoriser.listes')),
     radioGroup('consent-lists', [['all', t('claude.toutesMesListes')], ['some', t('claude.autoriser.certainesListes')]], 'all', (value) => {
       allLists = value === 'all';

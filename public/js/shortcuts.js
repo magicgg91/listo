@@ -72,6 +72,18 @@ let notesShown = () => true;
 // Projets utilisés ? (coupés au départ) : sinon, pas de groupe « Projet »
 // dans la fenêtre des raccourcis
 let projectsShown = () => false;
+// Listes utilisées ? (toujours pour un Admin et un Utilisateur ; un invité
+// peut ne pas les avoir, docs/cadrage-comptes.md, étape 3) : sinon, ni
+// groupe « Liste », ni [ et ], et N ne crée pas de liste
+let listsShown = () => true;
+
+// Ce que fait N, dans la fenêtre des raccourcis : « Nouvelle liste »
+// (« … nouvelle note sur les écrans des notes » quand les notes sont là
+// aussi), « Nouvelle note » sur les écrans des notes seulement, ou rien
+function newKeyLabel() {
+  if (listsShown()) return t(notesShown() ? 'raccourcis.partout.nouvelleListe' : 'navigation.nouvelleListe');
+  return notesShown() ? t('raccourcis.partout.nouvelleNote') : null;
+}
 
 // Liste des raccourcis (fenêtre « ? », aide), lue à l'ouverture (dans la
 // langue choisie)
@@ -79,15 +91,15 @@ export function shortcuts() {
   return [
     { group: t('raccourcis.partout'), keys: [
       [['?'], t('raccourcis.partout.afficher')],
-      [['N'], t(notesShown() ? 'raccourcis.partout.nouvelleListe' : 'navigation.nouvelleListe')],
+      newKeyLabel() ? [['N'], newKeyLabel()] : null,
       [['/'], t('raccourcis.partout.rechercher')],
       [[','], t('raccourcis.partout.reglages')],
       [[t('raccourcis.touche.echap')], t('raccourcis.partout.fermer')],
-      [['[', ']'], t('raccourcis.partout.listeVoisine')],
+      listsShown() ? [['[', ']'], t('raccourcis.partout.listeVoisine')] : null,
       [[t('raccourcis.touche.ctrl'), 'Z'], t('raccourcis.partout.annuler')],
       [[t('raccourcis.touche.ctrl'), t('raccourcis.touche.entree')], t('raccourcis.partout.enregistrer')],
-    ] },
-    { group: t('raccourcis.liste'), keys: [
+    ].filter(Boolean) },
+    !listsShown() ? null : { group: t('raccourcis.liste'), keys: [
       [['P'], t('raccourcis.liste.partager')],
       [['A'], t('raccourcis.liste.ajouter')],
       [['↓', '↑'], t('raccourcis.liste.suivant')],
@@ -231,9 +243,10 @@ let spaceHandled = false;
 // onGoList(delta) : [ et ], liste précédente ou suivante, dans l'ordre du
 // menu de gauche (pc-side.js : le menu ne nomme plus les listes une à une
 // depuis le 23 novembre 2026, il donne donc lui-même cet ordre)
-export function startShortcuts({ onUndo, onGoList, notesOn = () => true, projectsOn = () => false }) {
+export function startShortcuts({ onUndo, onGoList, notesOn = () => true, projectsOn = () => false, listsOn = () => true }) {
   notesShown = notesOn;
   projectsShown = projectsOn;
+  listsShown = listsOn;
   paintKeys();
   // Espace sur un bouton « clique » au relâchement : sur une ligne, il coche
   // (voir keydown) et ne doit rien faire de plus au relâchement, quel que
@@ -320,13 +333,15 @@ export function startShortcuts({ onUndo, onGoList, notesOn = () => true, project
           return true;
         }
         if (notesShown() && location.hash.startsWith('#/notes')) navigate('newNote', {}, { replace: /^#\/notes\/(?!corbeille)/.test(location.hash) });
-        else navigate('newList');
+        else if (listsShown()) navigate('newList');
+        // (sans listes : rien hors des écrans des notes et des projets)
+        else return false;
         return true;
       },
       '/': () => focusSearch(),
       ',': () => (navigate('settings'), true),
-      '[': () => (onGoList(-1), true),
-      ']': () => (onGoList(1), true),
+      '[': () => listsShown() && (onGoList(-1), true),
+      ']': () => listsShown() && (onGoList(1), true),
       p: () => {
         const share = $('.pc-head [data-action="share"]');
         if (!visible(share)) return false;

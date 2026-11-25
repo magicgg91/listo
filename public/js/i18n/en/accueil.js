@@ -49,6 +49,7 @@ export default {
   'accueil.bienvenue.titre': 'Welcome, {name}',
   'accueil.bienvenue.projets': 'Your account is ready. Turn on projects in Settings › Features to see the ones shared with you.',
   'accueil.bienvenue.notes': 'Your account is ready. Turn on notes in Settings › Features to see the ones shared with you.',
+  'accueil.bienvenue.listes': 'Your account is ready. Turn on lists in Settings › Features to see the ones shared with you.',
   'accueil.bienvenue.plusieurs': 'Your account is ready. Turn on a feature in Settings › Features to get started.',
   'accueil.bienvenue.aucune': 'Your account is ready. The Admin hasn\'t opened any feature for you yet: they take care of it.',
   'accueil.bienvenue.bouton': 'Open Settings › Features',

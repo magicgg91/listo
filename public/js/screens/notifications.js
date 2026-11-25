@@ -43,7 +43,7 @@
 import { h, icon, replace } from '../dom.js';
 import { errorMessage } from '../api.js';
 import { goBack } from '../router.js';
-import { app, onDataChange } from '../app.js';
+import { app, onDataChange, shownFeatures } from '../app.js';
 import * as actions from '../actions.js';
 import { toast } from '../ui.js';
 import { topbar } from './settings.js';
@@ -63,6 +63,10 @@ export const stateNotes = () => ({
   on: ['check', t('notifications.etat.activees')],
   off: null,
 });
+// Catégories qui ne concernent que les listes : cachées pour un compte qui
+// ne les utilise pas (un invité sans « Listes », docs/cadrage-comptes.md,
+// étape 3 ; sa valeur est gardée)
+export const LIST_ONLY_KINDS = ['wishes'];
 // Réglages du compte : [clé, titre, description]
 export const kindRows = () => [
   ['changes', t('notifications.sujet.modifications'), t('notifications.sujet.modifications.detail')],
@@ -107,7 +111,10 @@ export function renderNotifications(onLeave = () => {}) {
 
   // --- Réglages du compte (catégories, détail) ---
   let settings = null;
-  const switches = [...kindRows(), detailRow()].map(([key, label, help]) => {
+  // Listes non utilisées : ni « Envies », ni le rappel des réglages d'une
+  // liste, ni « Signaler les éléments cochés » (newsSwitches)
+  const listsUsed = shownFeatures().lists;
+  const switches = [...kindRows().filter(([key]) => listsUsed || !LIST_ONLY_KINDS.includes(key)), detailRow()].map(([key, label, help]) => {
     const toggle = h('button', {
       class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'false', disabled: true,
       'aria-labelledby': `notif-${key}-titre`, 'aria-describedby': `notif-${key}-aide`,
@@ -223,7 +230,7 @@ export function renderNotifications(onLeave = () => {}) {
       h('div', { class: 'stack group-after' }, note, testButton, h('p', { class: 'muted' }, privacyNote())),
       accountPart,
       // Réglages d'une seule liste : dans son menu ⋮ (list-actions.js)
-      h('div', { class: 'group-after' }, h('p', { class: 'muted' }, perListNote()))));
+      listsUsed ? h('div', { class: 'group-after' }, h('p', { class: 'muted' }, perListNote())) : null));
 }
 
 // Nouveautés (réglages du compte, valables sur tous mes appareils) :
@@ -249,7 +256,8 @@ export function newsSwitches(onLeave) {
     const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId });
     const paint = () => {
       toggle.setAttribute('aria-checked', String(Boolean(app.data.news?.[key])));
-      if (key === 'checks') row.hidden = !app.data.news?.enabled;
+      // « Signaler les éléments cochés » : des listes seulement
+      if (key === 'checks') row.hidden = !app.data.news?.enabled || !shownFeatures().lists;
     };
     toggle.addEventListener('click', () => {
       actions.setNewsSettings({ [key]: !app.data.news?.[key] });

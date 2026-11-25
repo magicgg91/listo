@@ -79,6 +79,7 @@ export default {
   'alertes.projet.droit.contribuer': 'You can add cards and comment.',
   'alertes.projet.droit.lire': 'Read only.',
   'alertes.projet.allumer': 'Turn on “Projects” in Settings › Features to see it.',
+  'alertes.liste.allumer': 'Turn on “Lists” in Settings › Features to see it.',
 
   // b) Résumé quotidien des échéances
   'alertes.echeances.aujourdhui': { one: '{count} task due today', other: '{count} tasks due today' },

@@ -46,9 +46,9 @@ export default {
         { table: {
           head: ['Kind', 'When', 'Example'],
           rows: [
-            ['“Changes”', "Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list. A shared note changed by someone else: at most one notification per note every quarter of an hour.", "‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’, ‘Léa edited the note “Travel”’"],
+            ['“Changes”', "Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list. A shared note changed by someone else: at most one notification per note every quarter of an hour. Projects: new cards, a card assigned to you, comments and changes of a followed card ([[projets-notifications]]).", "‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’, ‘Léa edited the note “Travel”’"],
             ['“Wishes”', "Someone reserves a wish or chips in for a gift, in a wish list where you can see the reservations.", "‘Marc reserved a wish’"],
-            ['“Sharing”', "You're added to a list or a note, or your access changes.", "‘Léa added you to “Home”’, ‘Léa shared the note “Travel” with you’"],
+            ['“Sharing”', "You're added to a list, a note or a project, or your access changes.", "‘Léa added you to “Home”’, ‘Léa shared the note “Travel” with you’"],
             ['“Due”', "Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any. And a task's reminder, at the time chosen in its details ([[heure]]).", "‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’"],
           ],
         } },

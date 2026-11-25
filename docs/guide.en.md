@@ -117,10 +117,12 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 - [7.2 Create, duplicate, delete a project](#projets-creer)
 - [7.3 Cards](#projets-cartes)
 - [7.4 An open card](#projets-carte)
-- [7.5 The project's columns and labels](#projets-colonnes)
-- [7.6 Sharing a project, the four roles](#projets-roles)
-- [7.7 Project trash](#projets-corbeilles)
-- [7.8 On a computer](#projets-ordinateur)
+- [7.5 Comments, history, following a card](#projets-commentaires)
+- [7.6 Projects' new activity and notifications](#projets-notifications)
+- [7.7 The project's columns and labels](#projets-colonnes)
+- [7.8 Sharing a project, the four roles](#projets-roles)
+- [7.9 Project trash](#projets-corbeilles)
+- [7.10 On a computer](#projets-ordinateur)
 
 </details>
 
@@ -300,7 +302,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 ### 2.7 Offline, trash, public link
 
 - Offline: Listo opens and works without a network; changes are sent when the network comes back ([5.17 Offline and sync](#hors-ligne)).
-- Trash: a deleted list can be restored for 30 days ([8.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note ([5.12 Notes](#notes)). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes” (and “Projects” when you use them: [7.7 Project trash](#projets-corbeilles)).
+- Trash: a deleted list can be restored for 30 days ([8.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note ([5.12 Notes](#notes)). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes” (and “Projects” when you use them: [7.9 Project trash](#projets-corbeilles)).
 - Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([8.6 Owner: the public link](#lien-public)); a note too ([5.13 Sharing a note](#notes-partage)).
 
 <a id="p-confort"></a>
@@ -1081,9 +1083,9 @@ Four kinds of notifications, each turned on or off in Settings, “Notifications
 
 | Kind | When | Example |
 | --- | --- | --- |
-| “Changes” | Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list. A shared note changed by someone else: at most one notification per note every quarter of an hour. | ‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’, ‘Léa edited the note “Travel”’ |
+| “Changes” | Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list. A shared note changed by someone else: at most one notification per note every quarter of an hour. Projects: new cards, a card assigned to you, comments and changes of a followed card ([7.6 Projects' new activity and notifications](#projets-notifications)). | ‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’, ‘Léa edited the note “Travel”’ |
 | “Wishes” | Someone reserves a wish or chips in for a gift, in a wish list where you can see the reservations. | ‘Marc reserved a wish’ |
-| “Sharing” | You're added to a list or a note, or your access changes. | ‘Léa added you to “Home”’, ‘Léa shared the note “Travel” with you’ |
+| “Sharing” | You're added to a list, a note or a project, or your access changes. | ‘Léa added you to “Home”’, ‘Léa shared the note “Travel” with you’ |
 | “Due” | Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any. And a task's reminder, at the time chosen in its details ([5.2 Time and reminder](#heure)). | ‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’ |
 
 You're never notified about what you do yourself (or about what an AI assistant does for you: [9. AI assistants (MCP)](#claude)). Unchecking and deleting are not notified. The due-date summary only counts task lists where due dates are turned on, and never tasks assigned to someone else. A task's reminder goes to the person it's assigned to, otherwise to all the members of the list.
@@ -1153,7 +1155,7 @@ The server must be able to reach the notification services over HTTPS (fcm.googl
 
 ## 7. Projects
 
-A project sorts cards into columns, like a board of ideas: ‘Ideas’, ‘Drafts’, ‘Review’, ‘Published’… Each project has a single board: its columns (a name and a color, in the order you choose), and in each column its cards, in the order you choose. For several boards, create several projects. A project is shared with Listo people, each with their role ([7.6 Sharing a project, the four roles](#projets-roles)); it has no public link.
+A project sorts cards into columns, like a board of ideas: ‘Ideas’, ‘Drafts’, ‘Review’, ‘Published’… Each project has a single board: its columns (a name and a color, in the order you choose), and in each column its cards, in the order you choose. For several boards, create several projects. A project is shared with Listo people, each with their role ([7.8 Sharing a project, the four roles](#projets-roles)); it has no public link.
 
 The feature is off at first, for each account: nothing changes until you turn it on.
 
@@ -1165,7 +1167,7 @@ Settings, “Features”, “Projects”: turn the switch on. The choice is your
 
 - On the phone, the bottom bar then has six buttons: “Home”, “Due”, “Lists”, “Notes”, “Projects” and “Settings” (five if Home or notes are turned off). With text enlarged by the phone, a label can be cut short (‘Du…’): the name read by the screen reader stays complete.
 - Home gets a “Projects” tile, at the bottom, across the full width: the number of your cards (assigned to you, not done), and the three most urgent (overdue first, then by due date); below, the project, the column and the due date (‘Overdue’ in red). A row opens the card; with no card for you, “No cards for you”. The title opens the “Projects” screen. Like the other tiles, it can be hidden and moved in Settings, “Home”; “Projects” can also become your first screen when Home is turned off.
-- The “Trash” in Settings gets a “Projects” tab ([7.7 Project trash](#projets-corbeilles)).
+- The “Trash” in Settings gets a “Projects” tab ([7.9 Project trash](#projets-corbeilles)).
 
 <a id="projets-creer"></a>
 
@@ -1173,7 +1175,7 @@ Settings, “Features”, “Projects”: turn the switch on. The choice is your
 
 - “Projects” screen: one card per project, the most recently changed at the top, with its columns (colored dot, name, number of cards), the people's badges, the “Read only” eye or “Contributor” depending on your role, ‘2 cards for you · 1 overdue’ (your cards not done), and a dot when someone else did something there since your last visit. The magnifier searches for a project by its name.
 - “+”, at the top right (“New project” when you have none): give a name (80 characters at most), then “Create”. The project starts with three columns, “To do”, “In progress” and “Done”, which you can rename as you like; it opens right away.
-- A project's ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.
+- A project's ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), “Turn off notifications” ([7.6 Projects' new activity and notifications](#projets-notifications)), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.
 - “Duplicate project” (any member, even “Read only”): a new project of yours, not shared, whose name ends with ‘(copy)’, with the same columns, the same labels and the same “Priority” option, but without any cards. Handy to make a template. It also works offline.
 - “Delete” (owner): the project goes to the “Trash” in Settings for 30 days, with its cards; it also disappears for the people it is shared with. “Cancel”, in the message that follows, puts it back right away.
 
@@ -1187,14 +1189,14 @@ On the phone, a project shows one column at a time. At the top, the column tabs 
 - The magnifier searches the whole project (titles, descriptions, label names and link titles); while searching, the results are sorted by column.
 - “Filter” opens “Filter cards”: check people (“Me”, each member, or “Nobody” for unassigned cards) and labels, then the ‘Show 3 cards’ button; a card remains if it belongs to one of the checked people AND has one of the checked labels. “Clear” removes the filter. The filter is kept for this project, on this device; the number of filters is written on the button, and the tabs count the cards shown.
 - Move a card: a long press lifts it, then drag it to its new place in the column, or drop it on a tab: it goes to the top of that column. Without dragging, the open card has, in its ⋮ menu, “Move to…” (choose the column, then “At the top” or “At the bottom”, then “Move”), “Move up” and “Move down”.
-- Tapping a card opens it ([7.4 An open card](#projets-carte)): its title (tap it to edit it, 200 characters at most), its column (the button in its color opens “Move to…”), its people, due date, labels, description and links. Its ⋮ menu: “Move to…”, “Move up”, “Move down”, “Duplicate” (a copy right below, yours) and “Delete”. Everything saves on its own, offline included.
+- Tapping a card opens it ([7.4 An open card](#projets-carte)): its title (tap it to edit it, 200 characters at most), its column (the button in its color opens “Move to…”), its people, due date, labels, description and links. Its ⋮ menu: “Move to…”, “Move up”, “Move down”, “Duplicate” (a copy right below, yours), “Follow” or “Unfollow” ([7.5 Comments, history, following a card](#projets-commentaires)) and “Delete”. Everything saves on its own, offline included.
 - A card your role doesn't let you edit says so (‘Read only’, or ‘You can read it, not edit it.’): it has no “+”, no typing, and no button that wouldn't work.
 
 <a id="projets-carte"></a>
 
 ### 7.4 An open card
 
-Each field of a card is always there, with its “+” or, when empty, a line to fill it (“Assign”, “Add a due date”…): there is only one place to fill it. Everything saves on its own, offline included. What your role doesn't allow has no button ([7.6 Sharing a project, the four roles](#projets-roles)).
+Each field of a card is always there, with its “+” or, when empty, a line to fill it (“Assign”, “Add a due date”…): there is only one place to fill it. Everything saves on its own, offline included. What your role doesn't allow has no button ([7.8 Sharing a project, the four roles](#projets-roles)).
 
 - People: the badges and first names of the assigned people; “+” (or “Assign”) opens the choice, with “Assign to me” at the top. A card can be assigned to the owner, a “Can edit” or a “Contributor”, never to a person with “Read only” (10 at most). A person who leaves the project, is removed from it or becomes “Read only” is removed from their cards.
 - Due, on a single line: the “Done” box, then the date and time (tap them to change them). Without a due date: “Add a due date”. The time is optional; with a time, a reminder can be chosen (at the time, 15 min, 30 min, 1 h, 2 h before, or the day before), written small below. “Remove due date” removes it, with the “Done” box.
@@ -1206,11 +1208,33 @@ Each field of a card is always there, with its “+” or, when empty, a line to
 - Links: a title (optional) and an address starting with http:// or https:// (20 links at most). Tap the title to open it in a new tab; ⋮: “Edit link”, “Copy address”, “Remove”. Listo never opens these addresses itself.
 - A Contributor on someone else's card assigned to them: they can edit everything on it and move it, and “Remove me” from the people; they can neither assign anyone nor delete it. Once removed, they can only read it.
 
-On the card, in the column: its labels, then the due date (green and ‘Done’ when it is done, red with a triangle when overdue), the priority, an icon when it has a description, ‘2/3’ for its boxes, the number of links, and the people's badges. The screen reader reads all this with the title. (Comments and history will come with the next step of projects.)
+On the card, in the column: its labels, then the due date (green and ‘Done’ when it is done, red with a triangle when overdue), the priority, an icon when it has a description, ‘2/3’ for its boxes, the number of links, the number of comments, the people's badges, and a blue dot when someone else changed it since your last visit. The screen reader reads all this with the title. Below the open card: the comments and the history ([7.5 Comments, history, following a card](#projets-commentaires)).
+
+<a id="projets-commentaires"></a>
+
+### 7.5 Comments, history, following a card
+
+Below an open card's links, two tabs: “Comments” (with their number) and “History”.
+
+- Write: “Write a comment…”, at the bottom of the screen on the phone (below the comments on a computer, Ctrl+Enter sends), then the arrow. The owner, “Can edit” and Contributors comment on every card; “Read only” reads the comments without being able to write any. A comment is plain text (4,000 characters at most); addresses starting with http:// or https:// become links. Offline included.
+- Your comments have “Edit” (‘edited’ is then written next to the date) and “Delete” (with confirmation). The project's owner can delete someone else's comment, never edit it.
+- A comment imported by an AI assistant (from another tool) is in a dashed bubble, with its original author's name and ‘imported by …’: it isn't linked to any Listo account ([9. AI assistants (MCP)](#claude)).
+- History: what happened to the card, the most recent at the top, with who and when: created, moved (from one column to another), renamed, description changed, box checked, assigned, due date, “Done”, labels, links, comment added (without its text), deleted, restored; ‘(AI assistant)’ when the action comes from an assistant ([9. AI assistants (MCP)](#claude)). It can only be read with the network; 300 lines at most per card.
+- Follow: you follow a card you created, that is assigned to you or that you commented on; its ⋮ menu (right column on a computer) has “Follow” for the others, and “Unfollow”, kept even if the card is assigned to you later. Following a card means getting its notifications ([7.6 Projects' new activity and notifications](#projets-notifications)).
+
+<a id="projets-notifications"></a>
+
+### 7.6 Projects' new activity and notifications
+
+- New activity: when someone else created, changed, moved or commented on a card since your last visit, a blue dot says so on the project's card (“Projects” screen), on Home's “Projects” tile, in the menu on the left on a computer, and on each card concerned. Opening the project marks it as seen, on all your devices; the cards' dots stay during this visit. Project ⋮ menu: “Hide new activity”.
+- Notifications (Notifications page, and the phone when they are turned on there: [6. Notifications](#notifications)): a project's new cards (‘Léa added 3 cards to DomoPi Articles’, one line per project that updates), a card assigned to you, the comments and changes (moved, due date, “Done”, description) of a card you follow, grouped once per quarter of an hour, a card's reminder (with the “Due” notifications, to the assigned people, otherwise to everyone; never for a done card), and a project being shared.
+- Never what you do yourself. Without “Show details in the notification”, the phone doesn't name the card (‘a card’); a comment's text is never in a notification.
+- Project ⋮ menu: “Turn off notifications” (page and phone, reminders included), independent of “Hide new activity”.
+- Projects turned off (Settings, “Features”): no new activity or notifications from projects, except when a project is shared with you: the notification then invites you to turn projects on, and tapping it opens Settings, “Features”.
 
 <a id="projets-colonnes"></a>
 
-### 7.5 The project's columns and labels
+### 7.7 The project's columns and labels
 
 “Project settings” (⋮ menu of an open project; owner and “Can edit”):
 
@@ -1223,7 +1247,7 @@ On the card, in the column: its labels, then the due date (green and ‘Done’ 
 
 <a id="projets-roles"></a>
 
-### 7.6 Sharing a project, the four roles
+### 7.8 Sharing a project, the four roles
 
 In one of your projects, “Share” (the people button at the top, or the ⋮ menu) opens the list of Listo accounts directly: a project has no public link. Check a person, then choose their access under their name, “Edit”, “Contribute” or “View”; uncheck them to remove them; then “OK”. A person you add starts with “View”. It needs the network.
 
@@ -1240,21 +1264,21 @@ In one of your projects, “Share” (the people button at the top, or the ⋮ m
 
 <a id="projets-corbeilles"></a>
 
-### 7.7 Project trash
+### 7.9 Project trash
 
 - Deleted projects: “Trash” in Settings, “Projects” tab (the owner only). Each row says when the project was deleted, how many days it has left, its number of cards and how many people it was shared with. “Restore” brings it back for everyone, with its columns and cards; “Delete for good” and “Empty the trash” ask for confirmation and need the network. After 30 days, it is erased for good.
 - Deleted cards: in each project (⋮ menu, “Deleted cards”), because anyone can delete cards. Each row: title, original column, who deleted it and when. “Restore”: the owner and “Can edit” for all of them, a Contributor for the ones they created; the card comes back at the bottom of its column (or of the first one, if its own no longer exists). “Delete for good” and “Empty the trash”: the owner, with the network. With “Read only”, the list can be seen, without buttons.
 
 <a id="projets-ordinateur"></a>
 
-### 7.8 On a computer
+### 7.10 On a computer
 
 “Projects” is in the menu on the left (after “Notes”), with the number of projects; on the projects' screens, your projects are listed below it (number of cards, new-activity dot), and the bottom button becomes “New project”, or “New card” in a project (N key).
 
 - An open project takes the full width: at the top, its name, ‘Project · 5 columns · 55 cards’, “Share” (P key) and the search (/ key); below, the filters by person (“All”, “Me”, each member, “Nobody”) and by label (several choices; ‘+ 2’ shows the others; “Clear filters”); then the columns side by side, which scroll sideways.
 - Each column has its ⋮ menu (owner and “Can edit”): rename and change the color, move left or right, “Delete column”. “Add a card”, at the bottom of a column, opens a field (Enter adds, Escape closes); “Add a column” is at the end.
 - Drag and drop: hold a card with the mouse and drop it in the same column or another one; a dashed place shows where it will land. With the keyboard: the arrows go from card to card (up and down in a column, left and right from one column to the next), Enter opens the card, M opens “Move to…”. Right-click on a card: its menu.
-- A card opens in a window in the middle, over the project: on the left the title and ‘in Review · DomoPi Articles · created by Guillaume on October 2’, its description and links; on the right, in this order, the column, the people, the labels, the due date (“Done” box and date on one line, reminder below), the priority (option on) and the actions. The address is the card's: you can send it or come back to it. Escape or the cross close it.
+- A card opens in a window in the middle, over the project: on the left the title and ‘in Review · DomoPi Articles · created by Guillaume on October 2’, its description, its links, then the comments and the history; on the right, in this order, the column, the people, the labels, the due date (“Done” box and date on one line, reminder below), the priority (option on) and the actions (“Move to…”, “Duplicate”, “Follow” or “Unfollow”, “Delete”). The address is the card's: you can send it or come back to it. Escape or the cross close it.
 
 <a id="roles"></a>
 
@@ -1379,7 +1403,7 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 - “Duplicate” (the list's ⋮ menu) creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.
 - The list's ⋮ menu, “Delete”: a confirmation first reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.
 - A deleted list stays in your “Trash” (Settings, “Lists” tab) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.
-- The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [5.12 Notes](#notes)), and a third one, “Projects”, when you use projects ([7.7 Project trash](#projets-corbeilles)); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”) and projects are off too, it has no tabs: only your lists.
+- The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [5.12 Notes](#notes)), and a third one, “Projects”, when you use projects ([7.9 Project trash](#projets-corbeilles)); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”) and projects are off too, it has no tabs: only your lists.
 - “Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.
 - “Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.
 - The owner doesn't leave their list: they delete it, or keep it.

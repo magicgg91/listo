@@ -26,7 +26,7 @@ export default {
         { ul: [
           '“Projects” screen: one card per project, the most recently changed at the top, with its columns (colored dot, name, number of cards), the people\'s badges, the “Read only” eye or “Contributor” depending on your role, ‘2 cards for you · 1 overdue’ (your cards not done), and a dot when someone else did something there since your last visit. The magnifier searches for a project by its name.',
           '“+”, at the top right (“New project” when you have none): give a name (80 characters at most), then “Create”. The project starts with three columns, “To do”, “In progress” and “Done”, which you can rename as you like; it opens right away.',
-          'A project\'s ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.',
+          'A project\'s ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), “Turn off notifications” ([[projets-notifications]]), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.',
           '“Duplicate project” (any member, even “Read only”): a new project of yours, not shared, whose name ends with ‘(copy)’, with the same columns, the same labels and the same “Priority” option, but without any cards. Handy to make a template. It also works offline.',
           '“Delete” (owner): the project goes to the “Trash” in Settings for 30 days, with its cards; it also disappears for the people it is shared with. “Cancel”, in the message that follows, puts it back right away.',
         ] },
@@ -42,7 +42,7 @@ export default {
           'The magnifier searches the whole project (titles, descriptions, label names and link titles); while searching, the results are sorted by column.',
           '“Filter” opens “Filter cards”: check people (“Me”, each member, or “Nobody” for unassigned cards) and labels, then the ‘Show 3 cards’ button; a card remains if it belongs to one of the checked people AND has one of the checked labels. “Clear” removes the filter. The filter is kept for this project, on this device; the number of filters is written on the button, and the tabs count the cards shown.',
           'Move a card: a long press lifts it, then drag it to its new place in the column, or drop it on a tab: it goes to the top of that column. Without dragging, the open card has, in its ⋮ menu, “Move to…” (choose the column, then “At the top” or “At the bottom”, then “Move”), “Move up” and “Move down”.',
-          'Tapping a card opens it ([[projets-carte]]): its title (tap it to edit it, 200 characters at most), its column (the button in its color opens “Move to…”), its people, due date, labels, description and links. Its ⋮ menu: “Move to…”, “Move up”, “Move down”, “Duplicate” (a copy right below, yours) and “Delete”. Everything saves on its own, offline included.',
+          'Tapping a card opens it ([[projets-carte]]): its title (tap it to edit it, 200 characters at most), its column (the button in its color opens “Move to…”), its people, due date, labels, description and links. Its ⋮ menu: “Move to…”, “Move up”, “Move down”, “Duplicate” (a copy right below, yours), “Follow” or “Unfollow” ([[projets-commentaires]]) and “Delete”. Everything saves on its own, offline included.',
           'A card your role doesn\'t let you edit says so (‘Read only’, or ‘You can read it, not edit it.’): it has no “+”, no typing, and no button that wouldn\'t work.',
         ] },
       ],
@@ -63,7 +63,34 @@ export default {
           'Links: a title (optional) and an address starting with http:// or https:// (20 links at most). Tap the title to open it in a new tab; ⋮: “Edit link”, “Copy address”, “Remove”. Listo never opens these addresses itself.',
           'A Contributor on someone else\'s card assigned to them: they can edit everything on it and move it, and “Remove me” from the people; they can neither assign anyone nor delete it. Once removed, they can only read it.',
         ] },
-        'On the card, in the column: its labels, then the due date (green and ‘Done’ when it is done, red with a triangle when overdue), the priority, an icon when it has a description, ‘2/3’ for its boxes, the number of links, and the people\'s badges. The screen reader reads all this with the title. (Comments and history will come with the next step of projects.)',
+        'On the card, in the column: its labels, then the due date (green and ‘Done’ when it is done, red with a triangle when overdue), the priority, an icon when it has a description, ‘2/3’ for its boxes, the number of links, the number of comments, the people\'s badges, and a blue dot when someone else changed it since your last visit. The screen reader reads all this with the title. Below the open card: the comments and the history ([[projets-commentaires]]).',
+      ],
+    },
+    {
+      id: 'projets-commentaires',
+      title: 'Comments, history, following a card',
+      blocks: [
+        'Below an open card\'s links, two tabs: “Comments” (with their number) and “History”.',
+        { ul: [
+          'Write: “Write a comment…”, at the bottom of the screen on the phone (below the comments on a computer, Ctrl+Enter sends), then the arrow. The owner, “Can edit” and Contributors comment on every card; “Read only” reads the comments without being able to write any. A comment is plain text (4,000 characters at most); addresses starting with http:// or https:// become links. Offline included.',
+          'Your comments have “Edit” (‘edited’ is then written next to the date) and “Delete” (with confirmation). The project\'s owner can delete someone else\'s comment, never edit it.',
+          'A comment imported by an AI assistant (from another tool) is in a dashed bubble, with its original author\'s name and ‘imported by …’: it isn\'t linked to any Listo account ([[claude]]).',
+          'History: what happened to the card, the most recent at the top, with who and when: created, moved (from one column to another), renamed, description changed, box checked, assigned, due date, “Done”, labels, links, comment added (without its text), deleted, restored; ‘(AI assistant)’ when the action comes from an assistant ([[claude]]). It can only be read with the network; 300 lines at most per card.',
+          'Follow: you follow a card you created, that is assigned to you or that you commented on; its ⋮ menu (right column on a computer) has “Follow” for the others, and “Unfollow”, kept even if the card is assigned to you later. Following a card means getting its notifications ([[projets-notifications]]).',
+        ] },
+      ],
+    },
+    {
+      id: 'projets-notifications',
+      title: 'Projects\' new activity and notifications',
+      blocks: [
+        { ul: [
+          'New activity: when someone else created, changed, moved or commented on a card since your last visit, a blue dot says so on the project\'s card (“Projects” screen), on Home\'s “Projects” tile, in the menu on the left on a computer, and on each card concerned. Opening the project marks it as seen, on all your devices; the cards\' dots stay during this visit. Project ⋮ menu: “Hide new activity”.',
+          'Notifications (Notifications page, and the phone when they are turned on there: [[notifications]]): a project\'s new cards (‘Léa added 3 cards to DomoPi Articles’, one line per project that updates), a card assigned to you, the comments and changes (moved, due date, “Done”, description) of a card you follow, grouped once per quarter of an hour, a card\'s reminder (with the “Due” notifications, to the assigned people, otherwise to everyone; never for a done card), and a project being shared.',
+          'Never what you do yourself. Without “Show details in the notification”, the phone doesn\'t name the card (‘a card’); a comment\'s text is never in a notification.',
+          'Project ⋮ menu: “Turn off notifications” (page and phone, reminders included), independent of “Hide new activity”.',
+          'Projects turned off (Settings, “Features”): no new activity or notifications from projects, except when a project is shared with you: the notification then invites you to turn projects on, and tapping it opens Settings, “Features”.',
+        ] },
       ],
     },
     {
@@ -118,7 +145,7 @@ export default {
           'An open project takes the full width: at the top, its name, ‘Project · 5 columns · 55 cards’, “Share” (P key) and the search (/ key); below, the filters by person (“All”, “Me”, each member, “Nobody”) and by label (several choices; ‘+ 2’ shows the others; “Clear filters”); then the columns side by side, which scroll sideways.',
           'Each column has its ⋮ menu (owner and “Can edit”): rename and change the color, move left or right, “Delete column”. “Add a card”, at the bottom of a column, opens a field (Enter adds, Escape closes); “Add a column” is at the end.',
           'Drag and drop: hold a card with the mouse and drop it in the same column or another one; a dashed place shows where it will land. With the keyboard: the arrows go from card to card (up and down in a column, left and right from one column to the next), Enter opens the card, M opens “Move to…”. Right-click on a card: its menu.',
-          'A card opens in a window in the middle, over the project: on the left the title and ‘in Review · DomoPi Articles · created by Guillaume on October 2’, its description and links; on the right, in this order, the column, the people, the labels, the due date (“Done” box and date on one line, reminder below), the priority (option on) and the actions. The address is the card\'s: you can send it or come back to it. Escape or the cross close it.',
+          'A card opens in a window in the middle, over the project: on the left the title and ‘in Review · DomoPi Articles · created by Guillaume on October 2’, its description, its links, then the comments and the history; on the right, in this order, the column, the people, the labels, the due date (“Done” box and date on one line, reminder below), the priority (option on) and the actions (“Move to…”, “Duplicate”, “Follow” or “Unfollow”, “Delete”). The address is the card\'s: you can send it or come back to it. Escape or the cross close it.',
         ] },
       ],
     },

@@ -973,9 +973,9 @@ export const GUIDE = [
           { table: {
             head: ['Catégorie', 'Quand', 'Exemple'],
             rows: [
-              ['« Modifications »', 'Quelqu\'un d\'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d\'une minute sont regroupés en une seule notification par liste. Une note partagée modifiée par quelqu\'un d\'autre : une notification par note et par quart d\'heure au plus.', '“Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »”, “Léa a modifié la note « Vacances »”'],
+              ['« Modifications »', 'Quelqu\'un d\'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d\'une minute sont regroupés en une seule notification par liste. Une note partagée modifiée par quelqu\'un d\'autre : une notification par note et par quart d\'heure au plus. Projets : nouvelles cartes, carte attribuée, commentaires et changements d\'une carte suivie ([[projets-notifications]]).', '“Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »”, “Léa a modifié la note « Vacances »”'],
               ['« Envies »', 'Quelqu\'un réserve un souhait ou participe à un cadeau, dans une liste d\'envies dont vous voyez les réservations.', '“Marc a réservé un souhait”'],
-              ['« Partage »', 'On vous ajoute à une liste ou à une note, ou votre droit change.', '“Léa vous a ajouté à « Maison »”, “Léa a partagé la note « Vacances » avec vous”'],
+              ['« Partage »', 'On vous ajoute à une liste, à une note ou à un projet, ou votre droit change.', '“Léa vous a ajouté à « Maison »”, “Léa a partagé la note « Vacances » avec vous”'],
               ['« Échéances »', 'Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd\'hui et en retard, s\'il y en a. Et le rappel d\'une tâche, au moment choisi dans sa fiche ([[heure]]).', '“3 tâches à faire aujourd\'hui · 1 en retard”, “Rappel : une tâche aujourd\'hui à 14:00”'],
             ],
           } },
@@ -1071,7 +1071,7 @@ export const GUIDE = [
           { ul: [
             'Écran « Projets » : une carte par projet, les plus récemment modifiés en haut, avec ses colonnes (point de couleur, nom, nombre de cartes), les pastilles des personnes, l\'œil « Lecture seule » ou « Contributeur » selon votre rôle, “2 cartes pour vous · 1 en retard” (vos cartes pas faites), et un point quand quelqu\'un d\'autre y a fait quelque chose depuis votre dernière visite. La loupe cherche un projet par son nom.',
             '« + », en haut à droite (« Nouveau projet » quand vous n\'en avez aucun) : donnez un nom (80 caractères au plus), puis « Créer ». Le projet commence avec trois colonnes, « À faire », « En cours » et « Fait », à renommer à votre goût ; il s\'ouvre tout de suite.',
-            'Menu ⋮ d\'un projet : « Ouvrir », « Partager » (vos projets) ou « Personnes », « Dupliquer le projet », « Masquer les nouveautés » (projet partagé), puis « Supprimer » (vos projets) ou « Quitter le projet ». Dans un projet ouvert, le même menu a aussi « Réglages du projet » et « Cartes supprimées ».',
+            'Menu ⋮ d\'un projet : « Ouvrir », « Partager » (vos projets) ou « Personnes », « Dupliquer le projet », « Masquer les nouveautés » (projet partagé), « Couper les notifications » ([[projets-notifications]]), puis « Supprimer » (vos projets) ou « Quitter le projet ». Dans un projet ouvert, le même menu a aussi « Réglages du projet » et « Cartes supprimées ».',
             '« Dupliquer le projet » (tout membre, même en « Lecture seule ») : un nouveau projet à vous, non partagé, dont le nom finit par “(copie)”, avec les mêmes colonnes, les mêmes étiquettes et la même option « Priorité », mais sans aucune carte. Pratique pour en faire un modèle. Cela marche aussi hors ligne.',
             '« Supprimer » (propriétaire) : le projet va dans la « Corbeille » des Réglages pour 30 jours, avec ses cartes ; il disparaît aussi pour les personnes avec qui il est partagé. « Annuler », dans le message qui suit, le remet tout de suite.',
           ] },
@@ -1087,7 +1087,7 @@ export const GUIDE = [
             'La loupe cherche dans tout le projet (titres, descriptions, noms des étiquettes et titres des liens) ; pendant la recherche, les résultats sont rangés par colonne.',
             '« Filtrer » ouvre « Filtrer les cartes » : cochez des personnes (« Moi », chaque membre, ou « Personne » pour les cartes sans attribution) et des étiquettes, puis le bouton “Voir 3 cartes” ; une carte reste si elle est à une des personnes cochées ET porte une des étiquettes cochées. « Effacer » retire le filtre. Le filtre est gardé pour ce projet, sur cet appareil ; le nombre de filtres est écrit sur le bouton, et les onglets comptent les cartes montrées.',
             'Déplacer une carte : un appui long la soulève, puis faites-la glisser à sa nouvelle place dans la colonne, ou posez-la sur un onglet : elle va en haut de cette colonne. Sans glisser, la carte ouverte a, dans son menu ⋮, « Déplacer vers… » (choisissez la colonne, puis « En haut » ou « En bas », puis « Déplacer »), « Monter » et « Descendre ».',
-            'Toucher une carte l\'ouvre ([[projets-carte]]) : son titre (touchez-le pour le modifier, 200 caractères au plus), sa colonne (le bouton de sa couleur ouvre « Déplacer vers… »), ses personnes, son échéance, ses étiquettes, sa description et ses liens. Son menu ⋮ : « Déplacer vers… », « Monter », « Descendre », « Dupliquer » (une copie juste dessous, à vous) et « Supprimer ». Tout s\'enregistre tout seul, hors ligne compris.',
+            'Toucher une carte l\'ouvre ([[projets-carte]]) : son titre (touchez-le pour le modifier, 200 caractères au plus), sa colonne (le bouton de sa couleur ouvre « Déplacer vers… »), ses personnes, son échéance, ses étiquettes, sa description et ses liens. Son menu ⋮ : « Déplacer vers… », « Monter », « Descendre », « Dupliquer » (une copie juste dessous, à vous), « Suivre » ou « Ne plus suivre » ([[projets-commentaires]]) et « Supprimer ». Tout s\'enregistre tout seul, hors ligne compris.',
             'Une carte que votre rôle ne permet pas de modifier le dit (“Lecture seule”, ou “Vous pouvez la lire, pas la modifier.”) : elle n\'a ni « + », ni saisie, ni bouton qui ne marcherait pas.',
           ] },
         ],
@@ -1108,7 +1108,34 @@ export const GUIDE = [
             'Liens : un titre (facultatif) et une adresse qui commence par http:// ou https:// (20 liens au plus). Touchez le titre pour l\'ouvrir dans un nouvel onglet ; ⋮ : « Modifier le lien », « Copier l\'adresse », « Retirer ». Listo n\'ouvre jamais ces adresses lui-même.',
             'Contributeur sur la carte d\'un autre qui lui est attribuée : il peut tout y modifier et la déplacer, et « Me retirer » des personnes ; il ne peut ni attribuer quelqu\'un ni la supprimer. Retiré, il ne peut plus que la lire.',
           ] },
-          'Sur la carte, dans la colonne : ses étiquettes, puis l\'échéance (verte et “Fait” quand elle est faite, rouge avec un triangle en retard), la priorité, une icône quand elle a une description, “2/3” pour ses cases, le nombre de liens, et les pastilles des personnes. Le lecteur d\'écran lit tout cela avec le titre. (Les commentaires et l\'historique arriveront avec la prochaine étape des projets.)',
+          'Sur la carte, dans la colonne : ses étiquettes, puis l\'échéance (verte et “Fait” quand elle est faite, rouge avec un triangle en retard), la priorité, une icône quand elle a une description, “2/3” pour ses cases, le nombre de liens, le nombre de commentaires, les pastilles des personnes, et un point bleu quand quelqu\'un d\'autre l\'a changée depuis votre dernière visite. Le lecteur d\'écran lit tout cela avec le titre. Sous la carte ouverte : les commentaires et l\'historique ([[projets-commentaires]]).',
+        ],
+      },
+      {
+        id: 'projets-commentaires',
+        title: 'Commentaires, historique, suivre une carte',
+        blocks: [
+          'Sous les liens d\'une carte ouverte, deux onglets : « Commentaires » (avec leur nombre) et « Historique ».',
+          { ul: [
+            'Écrire : « Écrire un commentaire… », en bas de l\'écran sur le téléphone (sous les commentaires sur ordinateur, Ctrl+Entrée envoie), puis la flèche. Le propriétaire, « Peut modifier » et les Contributeurs commentent toutes les cartes ; « Lecture seule » lit les commentaires sans pouvoir en écrire. Un commentaire est du texte simple (4 000 caractères au plus) ; les adresses qui commencent par http:// ou https:// deviennent des liens. Hors ligne compris.',
+            'Vos commentaires ont « Modifier » (“modifié” s\'écrit alors à côté de la date) et « Supprimer » (avec confirmation). Le propriétaire du projet peut supprimer le commentaire d\'un autre, jamais le modifier.',
+            'Un commentaire importé par un assistant IA (depuis un autre outil) est dans une bulle en pointillés, avec le nom de son auteur d\'origine et “importé par …” : il n\'est relié à aucun compte de Listo ([[claude]]).',
+            'Historique : ce qui est arrivé à la carte, le plus récent en haut, avec qui et quand : créée, déplacée (“de « Brouillons » vers « Relecture »”), renommée, description modifiée, case cochée, attribuée, échéance, « Fait », étiquettes, liens, commentaire ajouté (sans son texte), supprimée, restaurée ; “(assistant IA)” quand l\'action vient d\'un assistant ([[claude]]). Il se lit avec du réseau seulement ; 300 lignes au plus par carte.',
+            'Suivre : vous suivez une carte que vous avez créée, qui vous est attribuée ou que vous avez commentée ; son menu ⋮ (colonne de droite sur ordinateur) a « Suivre » pour les autres, et « Ne plus suivre », gardé même si l\'on vous attribue la carte ensuite. Suivre une carte, c\'est recevoir ses notifications ([[projets-notifications]]).',
+          ] },
+        ],
+      },
+      {
+        id: 'projets-notifications',
+        title: 'Nouveautés et notifications des projets',
+        blocks: [
+          { ul: [
+            'Nouveautés : quand quelqu\'un d\'autre a créé, modifié, déplacé ou commenté une carte depuis votre dernière visite, un point bleu le dit sur la carte du projet (écran « Projets »), sur la tuile « Projets » de l\'Accueil, dans le menu de gauche sur ordinateur, et sur chaque carte concernée. Ouvrir le projet le marque comme vu, sur tous vos appareils ; les points des cartes restent pendant cette visite. Menu ⋮ du projet : « Masquer les nouveautés ».',
+            'Notifications (page Notifications, et le téléphone quand elles y sont activées : [[notifications]]) : les nouvelles cartes d\'un projet (“Léa a ajouté 3 cartes dans « DomoPi Articles »”, une ligne par projet qui se met à jour), une carte qu\'on vous attribue, les commentaires et les changements (déplacée, échéance, « Fait », description) d\'une carte que vous suivez, regroupés une fois par quart d\'heure, le rappel d\'une carte (catégorie « Échéances », aux personnes attribuées, sinon à tous ; jamais pour une carte faite), et le partage d\'un projet.',
+            'Jamais ce que vous faites vous-même. Sans « Afficher le détail dans la notification », le téléphone ne nomme pas la carte (“une carte”) ; le texte d\'un commentaire n\'est jamais dans une notification.',
+            'Menu ⋮ du projet : « Couper les notifications » (page et téléphone, rappels compris), indépendant de « Masquer les nouveautés ».',
+            'Projets coupés (Réglages, « Fonctions ») : aucune nouveauté ni notification des projets, sauf quand on vous partage un projet : la notification vous invite alors à allumer les projets, et la toucher ouvre Réglages, « Fonctions ».',
+          ] },
         ],
       },
       {
@@ -1163,7 +1190,7 @@ export const GUIDE = [
             'Un projet ouvert prend toute la largeur : en haut, son nom, « Projet · 5 colonnes · 55 cartes », « Partager » (touche P) et la recherche (touche /) ; dessous, les filtres par personne (« Tout », « Moi », chaque membre, « Personne ») et par étiquette (plusieurs choix ; “+ 2” montre les autres ; « Effacer les filtres ») ; puis les colonnes côte à côte, qui défilent de côté.',
             'Chaque colonne a son menu ⋮ (propriétaire et « Peut modifier ») : renommer et changer la couleur, déplacer à gauche ou à droite, « Supprimer la colonne ». « Ajouter une carte », en bas d\'une colonne, ouvre un champ (Entrée ajoute, Échap referme) ; « Ajouter une colonne » est au bout.',
             'Glisser-déposer : tenez une carte avec la souris et posez-la dans la même colonne ou dans une autre ; une place en pointillés montre où elle tombera. Au clavier : les flèches passent d\'une carte à l\'autre (haut et bas dans une colonne, gauche et droite d\'une colonne à l\'autre), Entrée ouvre la carte, M ouvre « Déplacer vers… ». Clic droit sur une carte : son menu.',
-            'Une carte s\'ouvre dans une fenêtre au centre, par-dessus le projet : à gauche le titre et “dans Relecture · DomoPi Articles · créée par Guillaume le 2 octobre”, sa description et ses liens ; à droite, dans cet ordre, la colonne, les personnes, les étiquettes, l\'échéance (case « Fait » et date sur une ligne, rappel dessous), la priorité (option allumée) et les actions. L\'adresse est celle de la carte : on peut l\'envoyer ou y revenir. Échap ou la croix la ferment.',
+            'Une carte s\'ouvre dans une fenêtre au centre, par-dessus le projet : à gauche le titre et “dans Relecture · DomoPi Articles · créée par Guillaume le 2 octobre”, sa description, ses liens, puis les commentaires et l\'historique ; à droite, dans cet ordre, la colonne, les personnes, les étiquettes, l\'échéance (case « Fait » et date sur une ligne, rappel dessous), la priorité (option allumée) et les actions (« Déplacer vers… », « Dupliquer », « Suivre » ou « Ne plus suivre », « Supprimer »). L\'adresse est celle de la carte : on peut l\'envoyer ou y revenir. Échap ou la croix la ferment.',
           ] },
         ],
       },

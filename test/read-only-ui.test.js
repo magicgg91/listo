@@ -29,18 +29,21 @@ test('un seul composant : accessChoice, dans la feuille « Partager avec des per
   // Deux petits choix au bout de la ligne de la personne, « Modifier » (Peut
   // modifier) puis « Lire » (Lecture seule) ; le choix actif est en relief
   // (bord, fond, ombre du kit) et s'annonce par aria-checked
-  assert.match(picker, /export function accessChoice\(label, value, onChange\) \{/);
+  // (projets, 25 novembre 2026 : trois choix, « three », sous la personne ;
+  // listes et notes inchangées, deux choix au bout de la ligne)
+  assert.match(picker, /export function accessChoice\(label, value, onChange, \{ three = false \} = \{\}\) \{/);
+  assert.match(picker, /\[\['modification', t\('partage\.droit\.modifier'\)\], \['contribution', t\('partage\.droit\.contribuer'\)\], \['lecture', t\('partage\.droit\.lire'\)\]\]/);
   assert.match(picker, /\[\['modification', t\('partage\.droit\.modifier'\)\], \['lecture', t\('partage\.droit\.lire'\)\]\]/);
   assert.equal(fr['partage.droit.modifier'], 'Modifier');
   assert.equal(fr['partage.droit.lire'], 'Lire');
   assert.match(picker, /for \(const option of options\) option\.setAttribute\('aria-checked', String\(option\.dataset\.value === current\)\);/);
-  assert.match(picker, /h\('div', \{ class: 'segmented share__access', role: 'radiogroup', 'aria-label': label \}, options\)/);
-  assert.match(picker, /const rightLabel = \(name\) => \(note \? t\('partage\.droit\.choix\.note', \{ name \}\) : t\('partage\.droit\.choix', \{ name \}\)\);/);
+  assert.match(picker, /h\('div', \{ class: `segmented share__access\$\{three \? ' share__access--3' : ''\}`, role: 'radiogroup', 'aria-label': label \}, options\)/);
+  assert.match(picker, /const rightLabel = \(name\) => \(project \? t\('partage\.droit\.choix\.projet', \{ name \}\) : note \? t\('partage\.droit\.choix\.note', \{ name \}\) : t\('partage\.droit\.choix', \{ name \}\)\);/);
   assert.equal(fr['partage.droit.choix'], 'Droit de {name} sur la liste');
   assert.match(read('public/css/listo.css'), /\.segmented__opt\[aria-checked="true"\] \{ border-color: var\(--color-border\); background: var\(--color-surface\); color: var\(--color-text\); box-shadow: var\(--shadow-1\); \}/);
   // Chaque personne (pas le propriétaire) : son choix, caché (place gardée) tant qu'elle n'est pas cochée ;
   // une personne ajoutée commence en lecture seule
-  assert.match(picker, /const access = beneficiary \? null : accessChoice\(rightLabel\(person\.displayName\), rights\.get\(person\.id\) \?\? 'lecture', \(value\) => rights\.set\(person\.id, value\)\);/);
+  assert.match(picker, /const access = beneficiary \? null : accessChoice\(rightLabel\(person\.displayName\), rights\.get\(person\.id\) \?\? 'lecture', \(value\) => rights\.set\(person\.id, value\), \{ three: project \}\);/);
   assert.match(picker, /access\?\.classList\.toggle\('is-off', !on\);/);
   assert.match(read('public/css/app.css'), /\.share__access\.is-off \{ visibility: hidden; \}/);
   assert.equal((picker.match(/accessChoice\(/g) ?? []).length, 2, 'défini une fois, utilisé une fois');
@@ -50,7 +53,9 @@ test('un seul composant : accessChoice, dans la feuille « Partager avec des per
   assert.equal(fr['partage.personnes.proprietaire'], 'Propriétaire');
   // La feuille : « OK » dans l'en-tête, le nom en sous-titre
   const panel = read('public/js/screens/share-panel.js');
-  assert.match(panel, /title: t\('partage\.personnes\.titre'\),\s*sub: subject\.name\(item\),\s*tools: ok,/);
+  // (un projet : « Partager « … » » et la phrase « Avec des personnes de
+  // Listo seulement… » ; listes et notes inchangées)
+  assert.match(panel, /title: subject\.sheetTitle \? subject\.sheetTitle\(item\) : t\('partage\.personnes\.titre'\),\s*sub: subject\.intro \? subject\.intro\(item\) : subject\.name\(item\),\s*tools: subject\.project \? null : ok,/);
   assert.equal(fr['partage.personnes.titre'], 'Partager avec des personnes');
   // Envoyé au serveur d'un coup, seulement si quelque chose a changé
   assert.match(panel, /if \(!membersChanged\(now\.members, payload\)\) \{/);

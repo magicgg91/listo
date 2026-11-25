@@ -119,4 +119,14 @@ export default {
   'partage.vue.peutModifier': 'Can edit',
   'partage.vue.lectureSeule': 'Read only',
   'partage.vue.proprietaireSeul': 'Only the owner chooses the people, their access and the link.',
+  // Projects: no public link, three access levels to give
+  'partage.droit.contribuer': 'Contribute',
+  'partage.droit.choix.projet': "{name}'s access to the project",
+  'partage.legende.separateur': ': ',
+  'partage.legende.modifier': 'all the cards and the columns.',
+  'partage.legende.contribuer': 'add cards, comment, edit their own cards and the ones assigned to them.',
+  'partage.legende.lire': 'see, without changing anything.',
+  'partage.projet.titre': 'Share “{name}”',
+  'partage.projet.intro': 'With Listo people only: a project has no public link. The access applies to the whole project.',
+  'partage.vue.proprietaireSeul.projet': 'Only the owner chooses the people and their access.',
 };

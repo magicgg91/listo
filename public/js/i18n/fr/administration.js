@@ -23,6 +23,16 @@ export default {
   'administration.role.utilisateur': 'Utilisateur',
   'administration.role.admin': 'Admin',
   'administration.role': 'Rôle',
+  // Trois rôles (docs/cadrage-comptes.md, 25 novembre 2026) : Utilisateur,
+  // Invité, Admin ; la phrase sous le choix ; un invité est « discret »
+  'administration.role.invite': 'Invité',
+  'administration.role.utilisateur.aide': 'Visible de toute la famille.',
+  'administration.role.invite.aide': 'Un invité est toujours discret : la famille ne le voit pas, et il ne voit que les membres de ce qu\'on lui partage. Pour en faire un Admin, faites-en d\'abord un utilisateur.',
+  'administration.role.admin.aide': 'Accès à tout, Administration comprise. Pour en faire un invité, faites-en d\'abord un utilisateur.',
+  'administration.role.de': 'Rôle de {name}',
+  'administration.role.nouveau': 'Rôle du nouveau compte',
+  'administration.discret': 'Discret',
+  'administration.invites.titre': 'Invités',
 
   // Comptes : liste et demandes de compte
   'administration.compte.deuxFacteurs.active': '2FA activé',
@@ -66,6 +76,20 @@ export default {
   'administration.compte.role.utilisateur': 'Rôle Utilisateur donné',
   'administration.compte.role.soiMeme': 'Vous ne pouvez pas changer votre propre rôle.',
   'administration.compte.soiMeme': 'Votre mot de passe et votre 2FA se gèrent dans vos réglages.',
+
+  // Page d'un compte (#/administration/comptes/<id>) et changements de rôle
+  'administration.compte.titre': 'Compte de {name}',
+  'administration.compte.retour': 'Retour aux comptes',
+  'administration.compte.introuvable': 'Compte introuvable.',
+  'administration.compte.choisir': 'Choisissez un compte pour ouvrir sa page.',
+  'administration.compte.securite': 'Sécurité',
+  'administration.compte.role.invite': 'Rôle Invité donné',
+  'administration.compte.versInvite.question': 'Faire de {name} un invité ?',
+  'administration.compte.versInvite.texte': '{name} disparaîtra de la liste des personnes de la famille (Partager, « Pour qui ? ») et ne verra plus les autres comptes. Ce qui est déjà partagé avec {name} reste partagé, et ses membres continueront de l\'y voir. Ses fonctions ne changent pas ; ses liens publics sont arrêtés.',
+  'administration.compte.versInvite': 'Faire un invité',
+  'administration.compte.versUtilisateur.question': 'Faire de {name} un utilisateur ?',
+  'administration.compte.versUtilisateur.texte': 'Toute la famille pourra voir {name} et lui partager des listes, des notes et des projets, et {name} verra tous les comptes de la famille. Ses fonctions ne changent pas.',
+  'administration.compte.versUtilisateur': 'Faire un utilisateur',
 
   // Réinitialisation du mot de passe
   'administration.motDePasse.provisoire': 'Mot de passe provisoire',

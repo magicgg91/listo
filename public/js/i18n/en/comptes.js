@@ -45,7 +45,14 @@ export default {
   'comptes.demande.introuvable': 'Request not found or already handled.',
   'comptes.identifiant.pris': 'This username is already taken.',
   'comptes.fournisseur.dejaRelie': 'This {provider} account is already linked to a Listo account.',
-  'comptes.role.invalide': 'Invalid role (admin or user).',
+  'comptes.role.invalide': 'Invalid role (user, guest or admin).',
+  // Rôles (docs/cadrage-comptes.md) : jamais Admin ↔ Invité directement
+  'comptes.role.inviteVersAdmin': 'A guest can\'t become an Admin directly: make them a user first.',
+  'comptes.role.adminVersInvite': 'An Admin can\'t become a guest directly: make them a user first.',
+  'comptes.role.destinataireEnvies': {
+    one: 'A wish list is meant for {name}: this account can\'t become a guest.',
+    other: '{count} wish lists are meant for {name}: this account can\'t become a guest.',
+  },
   'comptes.identifiant.existe': 'This username already exists.',
   'comptes.rienAModifier': 'Nothing to change.',
   'comptes.actif.invalide': 'Invalid “active” value (true or false).',

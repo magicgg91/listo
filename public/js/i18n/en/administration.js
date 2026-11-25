@@ -23,6 +23,16 @@ export default {
   'administration.role.utilisateur': 'User',
   'administration.role.admin': 'Admin',
   'administration.role': 'Role',
+  // Trois rôles (docs/cadrage-comptes.md, 25 novembre 2026) : Utilisateur,
+  // Invité, Admin ; la phrase sous le choix ; un invité est « discret »
+  'administration.role.invite': 'Guest',
+  'administration.role.utilisateur.aide': 'Visible to the whole family.',
+  'administration.role.invite.aide': 'A guest is always discreet: the family doesn\'t see them, and they only see the members of what\'s shared with them. To make them an Admin, make them a user first.',
+  'administration.role.admin.aide': 'Access to everything, Administration included. To make them a guest, make them a user first.',
+  'administration.role.de': '{name}\'s role',
+  'administration.role.nouveau': 'Role of the new account',
+  'administration.discret': 'Discreet',
+  'administration.invites.titre': 'Guests',
 
   // Comptes : liste et demandes de compte
   'administration.compte.deuxFacteurs.active': '2FA enabled',
@@ -66,6 +76,20 @@ export default {
   'administration.compte.role.utilisateur': 'Role set to User',
   'administration.compte.role.soiMeme': 'You can\'t change your own role.',
   'administration.compte.soiMeme': 'Your password and 2FA are managed in your settings.',
+
+  // Page d'un compte (#/administration/comptes/<id>) et changements de rôle
+  'administration.compte.titre': '{name}\'s account',
+  'administration.compte.retour': 'Back to accounts',
+  'administration.compte.introuvable': 'Account not found.',
+  'administration.compte.choisir': 'Choose an account to open its page.',
+  'administration.compte.securite': 'Security',
+  'administration.compte.role.invite': 'Guest role given',
+  'administration.compte.versInvite.question': 'Make {name} a guest?',
+  'administration.compte.versInvite.texte': '{name} will disappear from the family\'s list of people (Share, “For whom?”) and will no longer see the other accounts. What\'s already shared with {name} stays shared, and its members will still see {name} there. Their features don\'t change; their public links are stopped.',
+  'administration.compte.versInvite': 'Make a guest',
+  'administration.compte.versUtilisateur.question': 'Make {name} a user?',
+  'administration.compte.versUtilisateur.texte': 'The whole family will be able to see {name} and share lists, notes and projects with them, and {name} will see all the family\'s accounts. Their features don\'t change.',
+  'administration.compte.versUtilisateur': 'Make a user',
 
   // Réinitialisation du mot de passe
   'administration.motDePasse.provisoire': 'Temporary password',

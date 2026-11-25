@@ -2,6 +2,7 @@
 //   GET    /api/admin/users                 lister les comptes
 //   POST   /api/admin/users                 créer un compte
 //   PATCH  /api/admin/users/:id             modifier nom affiché, rôle, actif
+//                                           (rôle : 'user', 'guest' ou 'admin')
 //   POST   /api/admin/users/:id/password    réinitialiser le mot de passe
 //   DELETE /api/admin/users/:id/2fa         désactiver la 2FA (téléphone perdu)
 //   DELETE /api/admin/users/:id             supprimer un compte jamais utilisé
@@ -17,6 +18,20 @@
 //   (il passe par ses réglages, où l'ancien mot de passe est demandé) ;
 // - il reste toujours au moins un Admin actif ;
 // - aucune de ces routes ne donne accès au contenu des listes.
+//
+// Rôles (docs/cadrage-comptes.md, décisions du 25 novembre 2026) : Admin,
+// Utilisateur, Invité. En base : users.role ('admin' ou 'user') et
+// users.guest (1 pour un invité), lus par accountRole()
+// (public/js/access.js). Changements de rôle :
+// - Utilisateur ↔ Invité : permis ; Utilisateur → Invité refusé tant
+//   qu'une liste d'envies lui est destinée (sa ou ses listes : le nombre
+//   est dit), et ses liens publics (listes, notes) sont arrêtés (un invité
+//   ne partage jamais ce qu'il possède) ;
+// - Admin ↔ Invité : jamais directement (passer par Utilisateur), refusé
+//   ici et par la base (contrainte de la migration 47) ;
+// - chaque changement est écrit dans le journal (admin_role_changed, en
+//   anglais), et tous les appareils connectés relisent leur annuaire
+//   (« event: refs », sans données).
 
 import crypto from 'node:crypto';
 import express from 'express';
@@ -24,6 +39,7 @@ import { hashPassword, passwordProblem } from '../passwords.js';
 import { revokeAllSessions } from '../auth.js';
 import { disableTwoFactor } from '../twofactor.js';
 import { isValidUsername, USERNAME_RULE, cleanName, parseId } from '../validate.js';
+import { accountRole, roleColumns, roleChangeProblem, ROLES } from '../../public/js/access.js';
 
 const LAST_ADMIN = 'comptes.dernierAdmin'; // nom du texte
 
@@ -35,9 +51,13 @@ export function adminUserRoutes(ctx) {
   // Nombre d'Admin actifs autres que le compte indiqué
   const otherActiveAdmins = db.prepare("SELECT COUNT(*) FROM users WHERE role = 'admin' AND active = 1 AND id != ?").pluck();
   // Un compte est « utilisé » s'il possède une liste, a créé un article, est
-  // membre d'une liste ou destinataire d'une liste d'envies. Une réservation
-  // n'en fait pas partie (elle s'efface avec le compte) : l'administration ne
-  // laisse ainsi rien deviner des réservations.
+  // membre d'une liste ou destinataire d'une liste d'envies, possède une
+  // note ou en est membre, possède un projet, en est membre, ou y a écrit
+  // (carte créée, commentaire, historique). Le supprimer effacerait ses
+  // projets avec lui (projects.owner_id … ON DELETE CASCADE) : il peut
+  // seulement être désactivé. Une réservation n'en fait pas partie (elle
+  // s'efface avec le compte) : l'administration ne laisse ainsi rien
+  // deviner des réservations.
   const accountUsed = db.prepare(`
     SELECT EXISTS (SELECT 1 FROM lists WHERE owner_id = :id)
         OR EXISTS (SELECT 1 FROM items WHERE created_by = :id)
@@ -45,14 +65,23 @@ export function adminUserRoutes(ctx) {
         OR EXISTS (SELECT 1 FROM lists WHERE for_user_id = :id)
         OR EXISTS (SELECT 1 FROM notes WHERE owner_id = :id)
         OR EXISTS (SELECT 1 FROM note_members WHERE user_id = :id)
+        OR EXISTS (SELECT 1 FROM projects WHERE owner_id = :id)
+        OR EXISTS (SELECT 1 FROM project_members WHERE user_id = :id)
+        OR EXISTS (SELECT 1 FROM cards WHERE created_by = :id)
+        OR EXISTS (SELECT 1 FROM card_comments WHERE user_id = :id OR imported_by = :id)
+        OR EXISTS (SELECT 1 FROM card_events WHERE user_id = :id)
   `).pluck();
+  // Listes d'envies destinées à un compte (corbeille comprise) : il ne peut
+  // pas devenir invité tant qu'il y en a (règles des réservations)
+  const wishListsFor = db.prepare('SELECT COUNT(*) FROM lists WHERE for_user_id = ?').pluck();
 
   // Ce qu'un Admin voit d'un compte : jamais d'empreinte, de secret ni de liste
   const describe = (user) => ({
     id: user.id,
     username: user.username,
     displayName: user.display_name,
-    role: user.role,
+    // Rôle calculé : 'admin', 'user' ou 'guest' (un invité est toujours discret)
+    role: accountRole(user),
     active: user.active === 1,
     totpEnabled: user.totp_enabled === 1,
     mustChangePassword: user.must_change_password === 1,
@@ -76,7 +105,7 @@ export function adminUserRoutes(ctx) {
   }
 
   // Vrai si retirer ce compte des Admin actifs en laisserait zéro
-  const isLastActiveAdmin = (user) => user.role === 'admin' && user.active === 1 && otherActiveAdmins.get(user.id) === 0;
+  const isLastActiveAdmin = (user) => accountRole(user) === 'admin' && user.active === 1 && otherActiveAdmins.get(user.id) === 0;
 
   // Liste des comptes, par identifiant
   router.get('/users', (req, res) => {
@@ -99,8 +128,8 @@ export function adminUserRoutes(ctx) {
     if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
     const name = cleanName(displayName);
     if (!name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
-    if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
-    const result = await ctx.oidc.acceptRequest(id, { username, displayName: name, role });
+    if (!ROLES.includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
+    const result = await ctx.oidc.acceptRequest(id, { username, displayName: name, ...roleColumns(role) });
     if (result.key) return res.status(result.status).json({ error: req.t(result.key, result.params) });
     audit('account_request_accepted', { admin: req.user.username, user: username, role });
     res.status(201).json({ user: describe(findUser.get(result.id)) });
@@ -135,7 +164,8 @@ export function adminUserRoutes(ctx) {
     if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
     const name = displayName === undefined || displayName === '' ? username : cleanName(displayName);
     if (!name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
-    if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
+    if (!ROLES.includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
+    const columns = roleColumns(role);
     // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : pas de
     // mot de passe provisoire ; la personne entrera avec le fournisseur d'identité (même
     // identifiant), le compte a un mot de passe aléatoire que personne ne connaît
@@ -149,8 +179,8 @@ export function adminUserRoutes(ctx) {
     // NOCASE dans la base) ; la vérification se fait au moment d'écrire.
     let id;
     try {
-      id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, ?)')
-        .run(username, name, hash, role, local ? 1 : 0).lastInsertRowid;
+      id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, guest, must_change_password) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(username, name, hash, columns.role, columns.guest, local ? 1 : 0).lastInsertRowid;
     } catch (err) {
       if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: req.t('comptes.identifiant.existe') });
       throw err;
@@ -173,42 +203,59 @@ export function adminUserRoutes(ctx) {
       changes.display_name = cleanName(displayName);
       if (!changes.display_name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
     }
+    const before = accountRole(user);
     if (role !== undefined) {
-      if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
-      changes.role = role;
+      const problem = roleChangeProblem(before, role);
+      if (problem) return res.status(400).json({ error: req.t(problem) });
+      if (role !== before) Object.assign(changes, roleColumns(role));
     }
     if (active !== undefined) {
       if (typeof active !== 'boolean') return res.status(400).json({ error: req.t('comptes.actif.invalide') });
       changes.active = active ? 1 : 0;
     }
 
-    const losesAdmin = changes.role === 'user' || changes.active === 0;
+    const after = changes.role === undefined ? before : accountRole(changes);
+    const losesAdmin = (before === 'admin' && after !== 'admin') || changes.active === 0;
     if (losesAdmin && user.id === req.user.id) {
       return res.status(400).json({ error: req.t('comptes.soiMeme.desactiver') });
     }
     if (losesAdmin && isLastActiveAdmin(user)) return res.status(409).json({ error: req.t(LAST_ADMIN) });
+    // Devenir invité : jamais tant qu'une liste d'envies lui est destinée
+    if (after === 'guest' && before !== 'guest') {
+      const count = wishListsFor.get(user.id);
+      if (count > 0) return res.status(409).json({ error: req.t('comptes.role.destinataireEnvies', { count, name: user.display_name }) });
+    }
 
     db.prepare(`UPDATE users SET
         display_name = COALESCE(:display_name, display_name),
         role = COALESCE(:role, role),
+        guest = COALESCE(:guest, guest),
         active = COALESCE(:active, active)
-      WHERE id = :id`).run({ display_name: null, role: null, active: null, ...changes, id: user.id });
+      WHERE id = :id`).run({ display_name: null, role: null, guest: null, active: null, ...changes, id: user.id });
 
     // Un compte désactivé est déconnecté partout, tout de suite
     if (changes.active === 0) revokeAllSessions(ctx, user.id, 'account disabled');
     // … et les liens publics de ses listes et de ses notes sont arrêtés
-    const stoppedLinks = changes.active === 0 ? ctx.shares.stopForOwner(user.id) : 0;
-    const stoppedNoteLinks = changes.active === 0 ? ctx.noteShares.stopForOwner(user.id) : 0;
+    // … de même quand il devient invité (un invité ne partage jamais ce
+    // qu'il possède)
+    const becomesGuest = after === 'guest' && before !== 'guest';
+    const stopLinks = changes.active === 0 || becomesGuest;
+    const stoppedLinks = stopLinks ? ctx.shares.stopForOwner(user.id) : 0;
+    const stoppedNoteLinks = stopLinks ? ctx.noteShares.stopForOwner(user.id) : 0;
+    const stopReason = changes.active === 0 ? 'account disabled' : 'account became a guest';
 
     // Journal : une ligne par changement réel
     const who = { admin: req.user.username, user: user.username, ip: req.ip };
     if (changes.display_name !== undefined && changes.display_name !== user.display_name) {
       audit('admin_account_renamed', { ...who, old: user.display_name, new: changes.display_name });
     }
-    if (changes.role !== undefined && changes.role !== user.role) audit('admin_role_changed', { ...who, role: changes.role });
+    if (after !== before) audit('admin_role_changed', { ...who, role: after, previous: before });
     if (changes.active === 0 && user.active === 1) audit('admin_account_disabled', who);
-    if (stoppedLinks) audit('public_link_stopped', { ...who, count: stoppedLinks, reason: 'account disabled' });
-    if (stoppedNoteLinks) audit('note_link_stopped', { ...who, count: stoppedNoteLinks, reason: 'account disabled' });
+    if (stoppedLinks) audit('public_link_stopped', { ...who, count: stoppedLinks, reason: stopReason });
+    if (stoppedNoteLinks) audit('note_link_stopped', { ...who, count: stoppedNoteLinks, reason: stopReason });
+    // Rôle changé : les annuaires changent (le sien, et celui des autres) ;
+    // tous les appareils connectés relisent (message sans données)
+    if (after !== before) ctx.events?.notifyReferences();
     if (changes.active === 1 && user.active === 0) audit('admin_account_reactivated', who);
 
     res.json({ user: describe(findUser.get(user.id)) });

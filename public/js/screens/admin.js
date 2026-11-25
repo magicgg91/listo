@@ -29,7 +29,8 @@ import { navigate, goBack } from '../router.js';
 import { compareNames } from '../sorting.js';
 import { activeOnly } from '../store.js';
 import { app, refreshData, providerName } from '../app.js';
-import { openSheet, confirmDialog, toast } from '../ui.js';
+import { openSheet, confirmDialog, toast, onPc } from '../ui.js';
+import { ROLES } from '../access.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
 import { itemWords, countItems } from '../words.js';
 import { t, compareText } from '../i18n.js';
@@ -77,7 +78,9 @@ function tabBar(entries, current, label, extraClass = '') {
     }, t.label)));
 }
 
-export function renderAdmin(tabKey, onLeave) {
+// accountId : compte choisi (#/administration/comptes/<id>) ; sur
+// ordinateur, sa page s'ouvre à droite de la liste des comptes
+export function renderAdmin(tabKey, onLeave, { accountId = null } = {}) {
   // « courses » seul : le dernier choix ; un choix de « Courses » : retenu
   if (tabKey === 'courses') tabKey = lastShopping;
   const shopping = SHOPPING.find((t) => t.key === tabKey);
@@ -105,7 +108,7 @@ export function renderAdmin(tabKey, onLeave) {
     alive = false;
   });
   const load = () => {
-    if (tab.key === 'comptes') return loadUsers(panel, footer, () => alive);
+    if (tab.key === 'comptes') return loadUsers(panel, footer, () => alive, { selectedId: accountId === null ? null : Number(accountId) });
     if (tab.key === 'etiquettes') return loadLabels(panel, () => alive);
     if (tab.key === 'noms') return loadNames(panel, () => alive);
     return loadReferences(tab, panel, () => alive);
@@ -145,36 +148,69 @@ const errorBlock = (err, retry) => h('div', { class: 'empty' },
   h('p', { class: 'empty__text' }, errorMessage(err)),
   h('button', { class: 'btn btn--secondary', type: 'button', onClick: retry }, t('administration.reessayer')));
 
-// Segmenté « Utilisateur / Admin » (même composant que le thème)
-function roleSwitch(role, onChange, { disabled = false } = {}) {
-  const options = [['user', t('administration.role.utilisateur')], ['admin', t('administration.role.admin')]].map(([value, label]) => {
-    const option = h('button', {
-      class: 'segmented__opt',
-      type: 'button',
-      role: 'radio',
-      'aria-checked': String(role === value),
-      disabled,
-    }, label);
-    option.addEventListener('click', () => {
-      for (const o of options) o.setAttribute('aria-checked', String(o === option));
-      onChange(value);
+// Choix du rôle « Utilisateur | Invité | Admin » (même composant que le
+// thème, .segmented ; docs/cadrage-comptes.md, décisions du 25 novembre
+// 2026). Le rôle choisi est en relief et s'annonce par aria-checked. Un
+// choix impossible est désactivé (pâli ET expliqué par la phrase dessous) :
+// « Admin » pour un invité, « Invité » pour un Admin (on passe d'abord par
+// « Utilisateur »), tout pour son propre compte. onPick(rôle) reçoit le
+// rôle touché ; il renvoie une promesse : faux = choix refusé ou annulé, le
+// choix revient au rôle d'avant.
+const ROLE_LABELS = { user: 'administration.role.utilisateur', guest: 'administration.role.invite', admin: 'administration.role.admin' };
+function roleChoice(role, onPick, { label = t('administration.role'), disabled = () => false } = {}) {
+  let current = role;
+  const options = ROLES.map((value) => {
+    const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', disabled: disabled(value) }, t(ROLE_LABELS[value]));
+    option.dataset.value = value;
+    option.addEventListener('click', async () => {
+      if (value === current) return;
+      const before = current;
+      current = value;
+      paint();
+      if ((await onPick(value)) === false) {
+        current = before;
+        paint();
+      }
     });
     return option;
   });
-  return h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': t('administration.role') }, options);
+  const paint = () => {
+    for (const option of options) option.setAttribute('aria-checked', String(option.dataset.value === current));
+  };
+  paint();
+  return h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': label }, options);
 }
+
+// Phrase sous le choix du rôle : ce que veut dire le rôle
+const roleHint = (role) => t({ user: 'administration.role.utilisateur.aide', guest: 'administration.role.invite.aide', admin: 'administration.role.admin.aide' }[role]);
+
+// Mention « Discret » d'un invité (Administration seulement) : l'œil barré
+// ET le mot, jamais l'icône seule (kit 16.48, .chip--discreet)
+const discreetChip = () => h('span', { class: 'chip chip--discreet' }, icon('eye-off'), t('administration.discret'));
 
 // ======================= Comptes =======================
 
-const userSub = (user) => [
-  user.role === 'admin' ? t('administration.role.admin') : t('administration.role.utilisateur'),
+const roleWord = (role) => t(ROLE_LABELS[role] ?? ROLE_LABELS.user);
+// État d'un compte : 2FA (ou « compte désactivé »), fournisseur d'identité
+const stateParts = (user) => [
   user.active ? (user.totpEnabled ? t('administration.compte.deuxFacteurs.active') : t('administration.compte.deuxFacteurs.desactive')) : t('administration.compte.desactive'),
   user.authelia ? providerName() : null,
-].filter(Boolean).join(' · ');
+];
+// Ligne d'un compte : « Invité · 2FA désactivé »
+const userSub = (user) => [roleWord(user.role), ...stateParts(user)].filter(Boolean).join(' · ');
 
-async function loadUsers(panel, footer, alive) {
+// Comptes rangés : Admin et Utilisateurs d'abord, puis les invités (sous le
+// titre « Invités »), chaque groupe par prénom
+function accountGroups(users) {
+  const sorted = [...users].sort((a, b) => compareNames(a.displayName, b.displayName));
+  return { family: sorted.filter((u) => u.role !== 'guest'), guests: sorted.filter((u) => u.role === 'guest') };
+}
+
+// Charge les comptes ; selectedId : compte dont la page est ouverte à côté
+// de la liste (ordinateur), ou null
+async function loadUsers(panel, footer, alive, { selectedId = null } = {}) {
   replace(panel, loadingText());
-  const reload = () => loadUsers(panel, footer, alive);
+  const reload = () => loadUsers(panel, footer, alive, { selectedId });
   let users;
   let accountRequests = [];
   let localLogin = true;
@@ -187,7 +223,7 @@ async function loadUsers(panel, footer, alive) {
   if (!alive()) return;
   // Pastille de Réglages › Administration : le nombre à jour
   if (app.user) app.user.accountRequests = accountRequests.length;
-  users.sort((a, b) => compareNames(a.displayName, b.displayName));
+  const { family, guests } = accountGroups(users);
   // Demandes de compte (connexion avec le fournisseur d'identité) : en premier, quand il y en a
   const requests = accountRequests.length
     ? [h('p', { class: 'section-title' }, t('administration.demande.titre', { count: accountRequests.length })),
@@ -198,36 +234,165 @@ async function loadUsers(panel, footer, alive) {
         h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => openAcceptSheet(request, reload) }, t('administration.demande.accepter'))))),
       h('p', { class: 'section-title' }, t('administration.onglets.comptes'))]
     : [];
-  replace(panel, ...requests, h('div', { class: 'group' }, users.map((user, i) => h('div', { class: `row${user.active ? '' : ' is-off'}` },
-    avatar(user.displayName, { second: i > 0 }),
+  const addButton = (block) => h('button', { class: `btn btn--primary${block ? ' btn--block' : ''}`, type: 'button', onClick: () => openNewUserSheet(reload, { localLogin }) }, icon('plus'), t('administration.compte.ajouter'));
+
+  // Ordinateur (kit 16.50, maquette pc-admin-comptes-1) : la liste à gauche,
+  // la page du compte choisi à droite ; « Ajouter un compte » sous la liste
+  if (onPc()) {
+    footer.hidden = true;
+    const line = (user, i) => h('button', {
+      class: `row${user.active ? '' : ' is-off'}`, type: 'button', 'aria-current': user.id === selectedId ? 'true' : null,
+      onClick: () => navigate('adminAccount', { id: user.id }, { replace: true }),
+    },
+    avatar(user.displayName, { second: i > 0 || user.role === 'guest' }),
     h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, userSub(user))),
+    user.role === 'guest' ? discreetChip() : null,
     user.active ? null : h('span', { class: 'chip' }, t('administration.compte.desactive.puce')),
-    iconButton('more', t('administration.compte.gerer', { name: user.displayName }), () => openUserSheet(user, reload, { localLogin }))))));
-  replace(footer, h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => openNewUserSheet(reload, { localLogin }) }, icon('plus'), t('administration.compte.ajouter')));
+    icon('chev-r'));
+    const selected = users.find((u) => u.id === selectedId) ?? null;
+    replace(panel, ...requests, h('div', { class: 'acct-split' },
+      h('div', { class: 'acct-split__list' },
+        h('div', { class: 'group' }, family.map(line)),
+        guests.length ? [h('h2', { class: 'section-title' }, t('administration.invites.titre')), h('div', { class: 'group' }, guests.map((u) => line(u, 1)))] : null,
+        addButton(true)),
+      h('div', { class: 'acct-split__page' },
+        selected ? accountPage(selected, { localLogin, reload, pc: true })
+          : h('p', { class: 'empty muted' }, t('administration.compte.choisir')))));
+    return;
+  }
+
+  // Téléphone (maquette admin-comptes-1) : ⋮ ouvre la page du compte
+  const line = (user, i) => h('div', { class: `row${user.active ? '' : ' is-off'}` },
+    avatar(user.displayName, { second: i > 0 || user.role === 'guest' }),
+    h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, userSub(user))),
+    user.role === 'guest' ? discreetChip() : null,
+    user.active ? null : h('span', { class: 'chip' }, t('administration.compte.desactive.puce')),
+    iconButton('more', t('administration.compte.gerer', { name: user.displayName }), () => navigate('adminAccount', { id: user.id })));
+  replace(panel, ...requests,
+    h('div', { class: 'group' }, family.map(line)),
+    guests.length ? [h('h2', { class: 'section-title' }, t('administration.invites.titre')), h('div', { class: 'group' }, guests.map((u) => line(u, 1)))] : null);
+  replace(footer, addButton(true));
 }
 
-// Feuille d'un compte (administration-2)
-// localLogin : connexion par mot de passe possible sur ce serveur ; coupée
-// (LISTO_LOCAL_LOGIN=off), « Réinitialiser le mot de passe » n'a plus de sens
-function openUserSheet(user, reload, { localLogin = true } = {}) {
+// Page d'un compte (téléphone) : #/administration/comptes/<id> (maquettes
+// admin-compte-1 et admin-compte-2). Elle remplace l'ancienne feuille.
+export function renderAdminAccount(id, onLeave) {
+  const body = h('div', { class: 'body body--flush' });
+  const title = h('h1', { class: 'topbar__title' }, t('administration.titre'));
+  let alive = true;
+  onLeave(() => {
+    alive = false;
+  });
+  const load = async () => {
+    replace(body, loadingText());
+    let users;
+    let localLogin = true;
+    try {
+      ({ users, localLogin = true } = await get('/api/admin/users'));
+    } catch (err) {
+      if (alive) replace(body, errorBlock(err, load));
+      return;
+    }
+    if (!alive) return;
+    const user = users.find((u) => String(u.id) === String(id));
+    if (!user) {
+      replace(body, h('div', { class: 'empty' }, h('p', { class: 'empty__text' }, t('administration.compte.introuvable'))));
+      return;
+    }
+    title.textContent = t('administration.compte.titre', { name: user.displayName });
+    document.title = `${title.textContent} · Listo`;
+    replace(body, accountPage(user, { localLogin, reload: load, pc: false }));
+  };
+  if (navigator.onLine) load();
+  else replace(body, h('div', { class: 'empty' }, h('p', { class: 'empty__text' }, t('administration.horsLigne.texte'))));
+  return h('div', { class: 'screen' },
+    h('header', { class: 'topbar' },
+      iconButton('chev-l', t('administration.compte.retour'), () => goBack('admin', { tab: 'comptes' })),
+      h('div', { class: 'topbar__main' }, title)),
+    body);
+}
+
+// Le contenu de la page d'un compte (téléphone et ordinateur) : en tête le
+// nom, l'identifiant, la 2FA (et « Discret » pour un invité) ; le rôle ;
+// puis la sécurité (mot de passe, double authentification, délier,
+// désactiver, supprimer). Aucun nom de liste, de note, de projet ni de
+// personne : l'Admin n'a aucun droit sur le contenu des autres.
+// (Les « Fonctions autorisées » arrivent à l'étape 2 du cadrage.)
+function accountPage(user, { localLogin = true, reload, pc = false }) {
   const self = user.id === app.user.id;
   const error = errorNote();
   const run = async (action, message) => {
     error.show('');
     try {
       await action();
-      sheet.close();
       if (message) toast(message, { low: true });
       reload();
+      return true;
     } catch (err) {
       error.show(errorMessage(err));
+      return false;
     }
   };
 
+  // En tête : pastille, nom, « identifiant · 2FA … »
+  const head = h('div', { class: 'card acct-card' },
+    avatar(user.displayName, { second: true, large: true }),
+    h('span', { class: 'grow' }, h('span', { class: 'row__title' }, user.displayName),
+      h('span', { class: 'row__sub' }, [user.username, ...stateParts(user)].filter(Boolean).join(' · '))),
+    user.role === 'guest' ? discreetChip() : null,
+    user.active ? null : h('span', { class: 'chip' }, t('administration.compte.desactive.puce')));
+
+  // Rôle : Admin ↔ Invité jamais directement ; son propre rôle, jamais
+  const hint = h('p', { class: 'field__hint' }, self ? t('administration.compte.role.soiMeme') : roleHint(user.role));
+  const pick = async (role) => {
+    const ok = await confirmRole(user, role);
+    if (!ok) return false;
+    return run(() => patch(`/api/admin/users/${user.id}`, { role }), t({ user: 'administration.compte.role.utilisateur', guest: 'administration.compte.role.invite', admin: 'administration.compte.role.admin' }[role]));
+  };
+  const roleBlock = [
+    h('h2', { class: 'section-title' }, t('administration.role')),
+    h('div', { class: 'acct-field' },
+      roleChoice(user.role, pick, {
+        label: t('administration.role.de', { name: user.displayName }),
+        disabled: (value) => self || (user.role === 'guest' && value === 'admin') || (user.role === 'admin' && value === 'guest'),
+      }),
+      hint),
+  ];
+
+  const actions = securityActions(user, { localLogin, reload, run });
+  const security = [
+    h('h2', { class: 'section-title' }, t('administration.compte.securite')),
+    actions.length ? h('div', { class: 'group' }, actions) : h('p', { class: 'page-intro' }, t('administration.compte.soiMeme')),
+  ];
+  return pc
+    ? [head, error.note, h('div', { class: 'acct-split__cols' }, h('div', {}, roleBlock), h('div', {}, security))]
+    : [head, error.note, roleBlock, security];
+}
+
+// Confirmation d'un changement de rôle (cadrage 6.1) : Utilisateur ↔
+// Invité disent ce qui change (discret, ou de nouveau visible) ; les autres
+// changements, comme avant, sans question. Renvoie vrai pour continuer.
+async function confirmRole(user, role) {
+  const name = user.displayName;
+  if (role === 'guest') {
+    return confirmDialog({ title: t('administration.compte.versInvite.question', { name }), text: t('administration.compte.versInvite.texte', { name }), confirmLabel: t('administration.compte.versInvite') });
+  }
+  if (user.role === 'guest' && role === 'user') {
+    return confirmDialog({ title: t('administration.compte.versUtilisateur.question', { name }), text: t('administration.compte.versUtilisateur.texte', { name }), confirmLabel: t('administration.compte.versUtilisateur') });
+  }
+  return true;
+}
+
+// Actions de sécurité d'un compte (pas le sien : son mot de passe et sa 2FA
+// se gèrent dans ses réglages). localLogin : connexion par mot de passe
+// possible sur ce serveur ; coupée (LISTO_LOCAL_LOGIN=off),
+// « Réinitialiser le mot de passe » n'a plus de sens.
+function securityActions(user, { localLogin, reload, run }) {
+  const self = user.id === app.user.id;
   const actions = [];
   if (!self) {
     if (localLogin) {
-      actions.push(h('button', { class: 'row row--menu', type: 'button', onClick: () => { sheet.close(); setTimeout(() => openResetSheet(user, reload), 0); } },
+      actions.push(h('button', { class: 'row row--menu', type: 'button', onClick: () => openResetSheet(user, reload) },
         icon('reset'), h('span', { class: 'row__title' }, t('administration.motDePasse.reinitialiser.titre'))));
     }
     if (user.totpEnabled) {
@@ -239,27 +404,6 @@ function openUserSheet(user, reload, { localLogin = true } = {}) {
           if (ok) run(() => del(`/api/admin/users/${user.id}/2fa`), t('administration.compte.deuxFacteurs.desactivee'));
         },
       }, icon('shield'), h('span', { class: 'row__title' }, t('administration.compte.deuxFacteurs.desactiver'))));
-    }
-    actions.push(user.active
-      ? h('button', {
-        class: 'row row--menu menu__item--danger',
-        type: 'button',
-        onClick: async () => {
-          const ok = await confirmDialog({ title: t('administration.compte.desactiver.question'), text: t('administration.compte.desactiver.texte', { name: user.displayName }), confirmLabel: t('administration.compte.desactiver') });
-          if (ok) run(() => patch(`/api/admin/users/${user.id}`, { active: false }), t('administration.compte.desactive.fait'));
-        },
-      }, icon('power'), h('span', { class: 'row__title' }, t('administration.compte.desactiver.titre')))
-      : h('button', { class: 'row row--menu', type: 'button', onClick: () => run(() => patch(`/api/admin/users/${user.id}`, { active: true }), t('administration.compte.reactive')) },
-        icon('power'), h('span', { class: 'row__title' }, t('administration.compte.reactiver'))));
-    if (!user.inUse) {
-      actions.push(h('button', {
-        class: 'row row--menu menu__item--danger',
-        type: 'button',
-        onClick: async () => {
-          const ok = await confirmDialog({ title: t('administration.compte.supprimer.question'), text: t('administration.compte.supprimer.texte', { name: user.displayName }), confirmLabel: t('administration.supprimer') });
-          if (ok) run(() => del(`/api/admin/users/${user.id}`), t('administration.compte.supprime'));
-        },
-      }, icon('trash'), h('span', { class: 'row__title' }, t('administration.compte.supprimer'))));
     }
   }
 
@@ -277,17 +421,43 @@ function openUserSheet(user, reload, { localLogin = true } = {}) {
     }, icon('link-off'), h('span', { class: 'row__title' }, t('administration.compte.delier.titre', { provider: providerName() }))));
   }
 
-  const sheet = openSheet({
-    title: user.displayName,
-    sub: userSub(user),
-    content: [
-      h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('administration.role')),
-        roleSwitch(user.role, (role) => run(() => patch(`/api/admin/users/${user.id}`, { role }), role === 'admin' ? t('administration.compte.role.admin') : t('administration.compte.role.utilisateur')), { disabled: self }),
-        self ? h('span', { class: 'field__hint' }, t('administration.compte.role.soiMeme')) : null),
-      actions.length ? h('div', { class: 'group' }, actions) : h('p', { class: 'muted' }, t('administration.compte.soiMeme')),
-      error.note,
-    ],
-  });
+  if (!self) {
+    actions.push(user.active
+      ? h('button', {
+        class: 'row row--menu menu__item--danger',
+        type: 'button',
+        onClick: async () => {
+          const ok = await confirmDialog({ title: t('administration.compte.desactiver.question'), text: t('administration.compte.desactiver.texte', { name: user.displayName }), confirmLabel: t('administration.compte.desactiver') });
+          if (ok) run(() => patch(`/api/admin/users/${user.id}`, { active: false }), t('administration.compte.desactive.fait'));
+        },
+      }, icon('power'), h('span', { class: 'row__title' }, t('administration.compte.desactiver.titre')))
+      : h('button', { class: 'row row--menu', type: 'button', onClick: () => run(() => patch(`/api/admin/users/${user.id}`, { active: true }), t('administration.compte.reactive')) },
+        icon('power'), h('span', { class: 'row__title' }, t('administration.compte.reactiver'))));
+    if (!user.inUse) {
+      actions.push(h('button', {
+        class: 'row row--menu menu__item--danger',
+        type: 'button',
+        onClick: async () => {
+          const ok = await confirmDialog({ title: t('administration.compte.supprimer.question'), text: t('administration.compte.supprimer.texte', { name: user.displayName }), confirmLabel: t('administration.supprimer') });
+          if (ok && await run(() => del(`/api/admin/users/${user.id}`), t('administration.compte.supprime'))) navigate('admin', { tab: 'comptes' }, { replace: true });
+        },
+      }, icon('trash'), h('span', { class: 'row__title' }, t('administration.compte.supprimer'))));
+    }
+  }
+  return actions;
+}
+
+// Champ « Rôle » d'un compte à créer (nouveau compte, demande acceptée) :
+// le choix « Utilisateur | Invité | Admin » et sa phrase, qui suit le choix
+function roleField(role, onChange, label = t('administration.role')) {
+  const hint = h('span', { class: 'field__hint' }, roleHint(role));
+  return h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('administration.role')),
+    roleChoice(role, (value) => {
+      hint.textContent = roleHint(value);
+      onChange(value);
+      return true;
+    }, { label }),
+    hint);
 }
 
 // Réinitialisation du mot de passe d'un compte
@@ -331,7 +501,7 @@ function openAcceptSheet(request, reload) {
   const form = h('form', { class: 'stack', novalidate: true },
     h('p', { class: 'muted' }, t('administration.demande.fournisseur', { provider: providerName() })),
     usernameField.field, nameField.field,
-    h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('administration.role')), roleSwitch(role, (value) => { role = value; })),
+    roleField(role, (value) => { role = value; }),
     error.note, submit);
   const sheet = openSheet({ title: t('administration.demande.accepter.titre'), sub: request.displayName, content: form });
   form.addEventListener('submit', async (event) => {
@@ -381,12 +551,14 @@ function openNewUserSheet(reload, { localLogin = true } = {}) {
   const passwordField = field(t('administration.motDePasse.provisoire'), password.wrap, { hint: t('administration.motDePasse.provisoire.aide') });
   const error = errorNote();
   const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('administration.compte.creer'));
+  // Le rôle d'abord (maquette nouveau-compte-1), puis l'identifiant, le nom
+  // et le mot de passe provisoire
   const form = h('form', { class: 'stack', novalidate: true },
+    roleField(role, (value) => { role = value; }, t('administration.role.nouveau')),
     usernameField.field, nameField.field,
     localLogin ? passwordField.field : h('p', { class: 'muted' }, t('administration.nouveauCompte.fournisseur', { provider: providerName() })),
-    h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('administration.role')), roleSwitch(role, (value) => { role = value; })),
     error.note, submit);
-  const sheet = openSheet({ title: t('administration.nouveauCompte.titre'), content: form });
+  const sheet = openSheet({ title: t('administration.nouveauCompte.titre'), content: form, scroll: true });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();

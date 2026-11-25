@@ -38,7 +38,7 @@ import { renderList } from './screens/list.js';
 import { renderListForm, openListFormPanel } from './screens/list-form.js';
 import { renderSettings, renderAbout, renderPassword, renderTwoFactor } from './screens/settings.js';
 import { renderAccount } from './screens/account.js';
-import { renderAdmin } from './screens/admin.js';
+import { renderAdmin, renderAdminAccount } from './screens/admin.js';
 import { renderHelp } from './screens/help.js';
 import { renderNotifications } from './screens/notifications.js';
 import { renderHomeSettings } from './screens/home-settings.js';
@@ -857,7 +857,7 @@ function show(route) {
     navigate(openingScreen(), {}, { replace: true });
     return;
   }
-  if (name === 'admin' && app.user.role !== 'admin') {
+  if ((name === 'admin' || name === 'adminAccount') && app.user.role !== 'admin') {
     navigate('settings', {}, { replace: true });
     return;
   }
@@ -941,6 +941,12 @@ function show(route) {
       else mount((onLeave) => renderTwoFactor(onLeave));
       break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
+    // Page d'un compte : un écran sur le téléphone ; sur ordinateur, à
+    // droite de la liste des comptes (onglet « Comptes »)
+    case 'adminAccount':
+      if (isDesktop()) mount((onLeave) => renderAdmin('comptes', onLeave, { accountId: params.id }));
+      else mount((onLeave) => renderAdminAccount(params.id, onLeave));
+      break;
     case 'help': mount(() => renderHelp()); break;
     // Aide ouverte sur une section précise (renvoi depuis un autre écran)
     case 'helpSection': mount(() => renderHelp(params.section)); break;

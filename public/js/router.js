@@ -63,6 +63,9 @@ export const ROUTES = [
   { name: 'help', path: '/aide' },
   { name: 'helpSection', path: '/aide/:section' },
   { name: 'admin', path: '/administration/:tab' },
+  // Page d'un compte (Administration › Comptes, docs/cadrage-comptes.md) :
+  // un écran sur le téléphone, à droite de la liste sur ordinateur
+  { name: 'adminAccount', path: '/administration/comptes/:id' },
   // Écran « Autoriser un assistant IA » (autorisation OAuth, voir claude-consent.js)
   { name: 'authorize', path: '/autoriser/:id' },
   // Assistants IA (Mon compte), seulement si l'accès est activé

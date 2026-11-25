@@ -72,7 +72,7 @@ test('droits inchangés : un compte non Admin n\'a pas accès ; les actions de c
   const lea = app.client();
   await login(lea, 'lea', 'MotDePasse-lea');
   // L'écran n'est pas proposé à un autre compte (app.js), et le serveur refuse
-  assert.match(read('public/js/app.js'), /if \(name === 'admin' && app\.user\.role !== 'admin'\) \{\s*navigate\('settings', \{\}, \{ replace: true \}\);/);
+  assert.match(read('public/js/app.js'), /if \(\(name === 'admin' \|\| name === 'adminAccount'\) && app\.user\.role !== 'admin'\) \{\s*navigate\('settings', \{\}, \{ replace: true \}\);/);
   for (const url of ['/api/admin/stores', '/api/admin/aisles', '/api/admin/names', '/api/admin/users']) {
     assert.equal((await lea.get(url)).status, 403, url);
   }

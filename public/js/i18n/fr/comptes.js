@@ -45,7 +45,14 @@ export default {
   'comptes.demande.introuvable': 'Demande introuvable ou déjà traitée.',
   'comptes.identifiant.pris': 'Cet identifiant est déjà pris.',
   'comptes.fournisseur.dejaRelie': 'Ce compte {provider} est déjà relié à un compte Listo.',
-  'comptes.role.invalide': 'Rôle invalide (admin ou user).',
+  'comptes.role.invalide': 'Rôle invalide (user, guest ou admin).',
+  // Rôles (docs/cadrage-comptes.md) : jamais Admin ↔ Invité directement
+  'comptes.role.inviteVersAdmin': 'Un invité ne devient pas Admin directement : faites-en d\'abord un utilisateur.',
+  'comptes.role.adminVersInvite': 'Un Admin ne devient pas invité directement : faites-en d\'abord un utilisateur.',
+  'comptes.role.destinataireEnvies': {
+    one: 'Une liste d\'envies est destinée à {name} : ce compte ne peut pas devenir invité.',
+    other: '{count} listes d\'envies sont destinées à {name} : ce compte ne peut pas devenir invité.',
+  },
   'comptes.identifiant.existe': 'Cet identifiant existe déjà.',
   'comptes.rienAModifier': 'Rien à modifier.',
   'comptes.actif.invalide': 'Valeur « active » invalide (true ou false).',

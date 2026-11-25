@@ -42,7 +42,8 @@ import { navigate } from '../router.js';
 import { longToday, todayKey } from '../format.js';
 import { TYPE_LABELS } from '../list-types.js';
 import { listCountsByType, saveTypeFilter } from '../store.js';
-import { app, onDataChange, refreshData, isDesktop } from '../app.js';
+import { app, onDataChange, refreshData, isDesktop, shownFeatures, canCreateProjects, allowedNow } from '../app.js';
+import { welcomeHint } from '../access.js';
 import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
 import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope, deadlineProjects } from '../deadlines.js';
 import { setPcListType } from './pc-side.js';
@@ -224,7 +225,9 @@ function projectsTile() {
   const news = projects.some((project) => projectUnread(app.data, project.id));
   if (!projects.length) {
     return tile(t('accueil.projets'), 'kanban', open,
-      [emptyText(t('accueil.projets.aucun')), rowsOf([addRow(t('accueil.projets.nouveau'), () => openNewProject())])]);
+      // (« Nouveau projet » : seulement avec « Peut créer ses propres
+      // projets », case de l'Admin)
+      [emptyText(t('accueil.projets.aucun')), canCreateProjects() ? rowsOf([addRow(t('accueil.projets.nouveau'), () => openNewProject())]) : null]);
   }
   const today = todayKey();
   const mine = myCards(app.data, app.user.id);
@@ -273,6 +276,27 @@ function accountTile() {
   ].filter(Boolean)));
 }
 
+// Invitation (docs/cadrage-comptes.md 4.4, maquette design/comptes
+// invite-accueil-vide-1, kit 16.51 .home-hint) : quand aucune fonction
+// n'est utilisée (un invité dont l'Admin n'a encore rien ouvert, ou qui a
+// tout éteint), une carte sur toute la largeur, au-dessus de la tuile
+// Compte : « Bienvenue, Max », une phrase qui nomme la fonction à allumer
+// (s'il n'y en a qu'une) et le bouton « Ouvrir Réglages › Fonctions ».
+// Rien d'autorisé : la phrase seule (l'Admin s'en charge). La règle :
+// welcomeHint (access.js). À l'étape 2 du cadrage, les Listes sont encore
+// toujours là : elle n'apparaît pas encore.
+const HINT_ICONS = { projects: 'kanban', notes: 'note' };
+const HINT_TEXTS = { projects: 'accueil.bienvenue.projets', notes: 'accueil.bienvenue.notes' };
+function welcomeCard(hint) {
+  const text = hint.kind === 'one' ? t(HINT_TEXTS[hint.feature]) : t(hint.kind === 'several' ? 'accueil.bienvenue.plusieurs' : 'accueil.bienvenue.aucune');
+  return h('section', { class: 'card home-hint', 'aria-labelledby': 'accueil-bienvenue' },
+    h('div', { class: 'home-hint__icon', 'aria-hidden': 'true' }, icon(HINT_ICONS[hint.feature] ?? 'layers')),
+    h('h2', { class: 'home-hint__title', id: 'accueil-bienvenue' }, t('accueil.bienvenue.titre', { name: app.user.displayName })),
+    h('p', { class: 'home-hint__text' }, text),
+    hint.kind === 'none' ? null
+      : h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => navigate('features') }, icon('layers', 'icon--sm'), t('accueil.bienvenue.bouton')));
+}
+
 // --- Écran ---
 
 export function renderHome(onLeave) {
@@ -296,7 +320,7 @@ export function renderHome(onLeave) {
     // Accueil coupé (Réglages › Accueil, ici ou sur un autre appareil) :
     // le premier écran choisi le remplace
     // (un instant plus tard : jamais pendant que l'écran se pose)
-    const first = firstScreen(app.data.home, app.data.features);
+    const first = firstScreen(app.data.home, shownFeatures());
     if (first !== 'home') {
       if (!leaving) {
         leaving = true;
@@ -311,10 +335,12 @@ export function renderHome(onLeave) {
     // coupée (Notes) ; une tuile seule sur sa ligne du téléphone prend
     // toute la largeur
     const build = { deadlines: deadlinesTile, lists: () => listsTile(pc), gifts: giftsTile, notes: () => notesTile(pc), account: accountTile, projects: projectsTile };
-    const present = shownTiles(app.data.home, app.data.features).map((name) => [name, build[name]()]).filter(([, el]) => el);
+    const present = shownTiles(app.data.home, shownFeatures()).map((name) => [name, build[name]()]).filter(([, el]) => el);
     const layout = tileLayout(present.map(([name]) => name));
     present.forEach(([, el], i) => el.classList.toggle('tile--wide', layout[i].wide));
-    replace(tiles, present.map(([, el]) => el));
+    // Aucune fonction utilisée : l'invitation en tête (access.js, welcomeHint)
+    const hint = welcomeHint(app.data.features, allowedNow(), { lists: true });
+    replace(tiles, hint ? welcomeCard(hint) : null, present.map(([, el]) => el));
     fit.update();
   };
   const idle = drawWhenIdle(content, draw);

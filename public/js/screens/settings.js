@@ -12,7 +12,7 @@
 import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace } from '../dom.js';
 import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
-import { app } from '../app.js';
+import { app, allowedNow } from '../app.js';
 import { aboutVersion } from '../format.js';
 import { toast, onPc } from '../ui.js';
 import { singleKeysOn, setSingleKeys, openShortcuts } from '../shortcuts.js';
@@ -117,7 +117,14 @@ export function renderSettings() {
 // administration (compte Admin seulement). « Fonctions »
 // (features.js, 24 novembre 2026) suit « Accueil ».
 const homeRow = () => row({ iconName: 'home', title: t('reglages.accueil'), sub: t('reglages.accueil.detail'), onClick: () => navigate('homeSettings') });
-const featuresRow = () => row({ iconName: 'layers', title: t('reglages.fonctions'), sub: t('reglages.fonctions.detail'), onClick: () => navigate('features') });
+// Sous « Fonctions » : celles que l'Admin autorise à ce compte (« Notes,
+// Projets », « Projets »… ; docs/cadrage-comptes.md, étape 2)
+const FEATURE_DETAIL = { 'notes,projects': 'reglages.fonctions.detail', notes: 'reglages.fonctions.detail.notes', projects: 'reglages.fonctions.detail.projets', '': 'reglages.fonctions.detail.aucune' };
+const featuresDetail = () => {
+  const allowed = allowedNow();
+  return t(FEATURE_DETAIL[['notes', 'projects'].filter((name) => allowed[name]).join(',')]);
+};
+const featuresRow = () => row({ iconName: 'layers', title: t('reglages.fonctions'), sub: featuresDetail(), onClick: () => navigate('features') });
 function generalRows(isAdmin) {
   return [
     notificationsRow(),

@@ -55,6 +55,8 @@ export default {
   },
   'comptes.identifiant.existe': 'Cet identifiant existe déjà.',
   'comptes.rienAModifier': 'Rien à modifier.',
+  'comptes.fonctions.invalides': 'Fonctions autorisées invalides : notes, projects, projectsCreate ou mcp, vrai ou faux.',
+  'comptes.fonctions.admin': 'Un Admin a accès à tout : pas de fonctions à autoriser.',
   'comptes.actif.invalide': 'Valeur « active » invalide (true ou false).',
   'comptes.soiMeme.desactiver': 'Vous ne pouvez pas vous désactiver ni vous retirer le rôle Admin.',
   'comptes.dernierAdmin': 'Il doit toujours rester au moins un Admin actif.',

@@ -16,6 +16,7 @@ export default {
   'projets.nouveau': 'Nouveau projet',
   'projets.vide.titre': 'Aucun projet',
   'projets.vide.texte': 'Un projet range des cartes en colonnes (idées, en cours, fait…), à partager avec les personnes de Listo.',
+  'projets.vide.partages': 'Les projets qu\'on vous partagera apparaîtront ici.',
   'projets.recherche.libelle': 'Rechercher un projet',
   'projets.recherche.nombre': { one: '{count} projet trouvé', other: '{count} projets trouvés' },
   'projets.recherche.aucunResultat': 'Aucun résultat',

@@ -46,7 +46,7 @@ import { listIcon } from '../list-icons.js';
 import { LIST_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isListType } from '../list-types.js';
 import { computeSummaries, loadListSort, newsBadge, listCountsByType, notesHaveNews } from '../store.js';
 import { liveNotes } from '../notes.js';
-import { app, onDataChange, openingScreen } from '../app.js';
+import { app, onDataChange, openingScreen, shownFeatures, canCreateProjects } from '../app.js';
 import { notesOn, projectsOn } from '../features.js';
 import { projectRights } from '../projects.js';
 import { cardCount, projectUnread } from '../project-view.js';
@@ -216,6 +216,9 @@ export function createPcSide() {
     brandScreen.textContent = ` ${first === 'home' ? t('navigation.marque.accueil') : t('navigation.marque.ecran', { name: SCREEN_NAMES[first]() })}`;
     markCurrent(homeLink, selected.name === 'home');
     markCurrent(deadlinesLink, selected.name === 'deadlines');
+    // Échéances : toujours, sauf pour un invité sans rien de daté
+    // (features.js, screenFeatures ; docs/cadrage-comptes.md, décision 5)
+    deadlinesLink.hidden = !shownFeatures().deadlines;
     markCurrent(listsLink, selected.name === 'lists' && pcType === 'all');
     const notes = app.data.loaded ? countNotes() : null;
     notesCount.textContent = notes === null ? '' : String(notes);
@@ -241,7 +244,9 @@ export function createPcSide() {
     const board = onProjects && BOARD_SCREENS.includes(selected.name) ? app.data.projects.get(selected.projectId) : null;
     const canAdd = Boolean(board && !board.deletedAt && projectRights(board.role).createCards);
     newCard.hidden = !canAdd;
-    newProject.hidden = !onProjects || canAdd;
+    // « Nouveau projet » : seulement avec « Peut créer ses propres
+    // projets » (case de l'Admin, docs/cadrage-comptes.md, étape 2)
+    newProject.hidden = !onProjects || canAdd || !canCreateProjects();
     newList.hidden = onProjects || (notesUsed && NOTE_SCREENS.includes(selected.name));
     newNote.hidden = onProjects || !(notesUsed && NOTE_SCREENS.includes(selected.name));
   };

@@ -53,8 +53,13 @@ export function emptyState() {
     // synchronisation (Accueil affiché, toutes les tuiles, ordre de départ)
     home: normalizeHome(null),
     // Mon réglage « Fonctions » (Réglages › Fonctions, features.js), de
-    // même ; valeurs de départ : tout est utilisé
+    // même ; valeurs de départ : tout est utilisé. Ce sont les fonctions
+    // UTILISÉES (autorisées par l'Admin et allumées), calculées par le serveur
     features: normalizeFeatures(null),
+    // Ce que l'Admin m'a autorisé (access.js : notes, projects,
+    // projectsCreate, mcp), ou null avant la première synchronisation
+    // (alors les valeurs de départ de mon rôle)
+    allowed: null,
     trash: new Map(),       // articles supprimés ici (pour « Annuler »), en mémoire seulement
     // Notes (notes.js, server/notes.js) : celles que je vois, corbeille
     // comprise (deletedAt rempli)
@@ -134,6 +139,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     news: state.news,
     home: state.home,
     features: state.features,
+    allowed: state.allowed,
     reservations: state.reservations,
     gifts: { reservedAt: state.gifts.reservedAt, bought: [...state.gifts.bought] },
     notes: [...state.notes.values()],
@@ -167,6 +173,9 @@ export function fromSnapshot(snapshot) {
     state.home = normalizeHome(snapshot.home);
     // (copie d'avant le réglage « Fonctions » : tout est utilisé)
     state.features = normalizeFeatures(snapshot.features);
+    // (copie d'avant les fonctions autorisées : inconnues, données par la
+    // synchronisation suivante)
+    state.allowed = snapshot.allowed && typeof snapshot.allowed === 'object' ? { ...snapshot.allowed } : null;
     state.reservations = snapshot.reservations ?? {};
     // (copie d'avant « À offrir » : vide, remplie à la synchronisation suivante)
     state.gifts = giftsFrom(snapshot.gifts);
@@ -233,6 +242,7 @@ export function loadSync(state, data) {
   if (data.news) state.news = data.news;
   if (data.home) state.home = normalizeHome(data.home);
   if (data.features) state.features = normalizeFeatures(data.features);
+  if (data.allowed) state.allowed = { ...data.allowed };
   loadNotes(state, data, { full: true });
   loadProjects(state, data, { full: true });
   state.loaded = true;
@@ -282,11 +292,14 @@ export function mergeSync(state, data) {
   // Réglage « Accueil » : de même
   if (data.home) state.home = normalizeHome(data.home);
   // Réglage « Fonctions » : de même. Projets rallumés (sur un autre
-  // appareil) : tout recharger, le serveur n'en envoyait rien
+  // appareil, ou autorisés de nouveau par l'Admin), notes autorisées de
+  // nouveau : tout recharger, le serveur n'en envoyait rien
   if (data.features) {
     if (projectsOn(data.features) && !projectsOn(state.features)) state.projectsReload = true;
+    if (notesOn(data.features) && !notesOn(state.features)) state.projectsReload = true;
     state.features = normalizeFeatures(data.features);
   }
+  if (data.allowed) state.allowed = { ...data.allowed };
   // Réservations : en entier à chaque synchronisation (une libération
   // disparaît d'elle-même) ; rien pour une liste où je suis bénéficiaire
   state.reservations = data.reservations ?? {};
@@ -435,7 +448,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     // effet tout de suite, hors ligne compris
     case 'account.features': {
       const { id, type, ...change } = op;
-      if (featuresChangeProblem(change)) return;
+      // (une fonction que l'Admin ne m'a pas autorisée : refusée ici aussi)
+      if (featuresChangeProblem(change, state.allowed)) return;
       const next = applyFeaturesChange(state.features, change);
       // Projets rallumés : la prochaine synchronisation recharge tout
       if (projectsOn(next) && !projectsOn(state.features)) state.projectsReload = true;

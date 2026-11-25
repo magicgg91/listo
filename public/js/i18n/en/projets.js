@@ -14,6 +14,7 @@ export default {
   'projets.nouveau': 'New project',
   'projets.vide.titre': 'No projects',
   'projets.vide.texte': 'A project sorts cards into columns (ideas, in progress, done…), to share with Listo people.',
+  'projets.vide.partages': 'Projects shared with you will appear here.',
   'projets.recherche.libelle': 'Search for a project',
   'projets.recherche.nombre': { one: '{count} project found', other: '{count} projects found' },
   'projets.recherche.aucunResultat': 'No results',

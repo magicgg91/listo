@@ -19,6 +19,13 @@
 // modifier » (le serveur l'impose aussi). S'il a quitté la liste, il peut
 // être recoché, toujours en « Peut modifier » (sans choix de droit).
 //
+// Une personne de mon annuaire à qui l'Admin n'a pas autorisé les notes
+// (partage d'une note) ou les projets (partage d'un projet) est grisée,
+// avec « N'utilise pas les notes » (« … les projets ») sous son prénom, et
+// ne peut pas être cochée (docs/cadrage-comptes.md 7.3 ; le serveur refuse
+// aussi de l'ajouter). Déjà membre, elle reste affichée et peut être
+// retirée. (Annuaire : « uses », server/directory.js.)
+//
 // Rien n'est envoyé ici : payload() donne ce que « OK » enverra
 // (share-panel.js).
 
@@ -103,11 +110,15 @@ export function peoplePicker({ me, users, members, beneficiaryId = null, note = 
     const beneficiary = person.id === beneficiaryId;
     if (beneficiary && lockedBeneficiary) return lockedRow(person, person.displayName, t('partage.personnes.destinataire'));
     const box = h('span', { class: 'tick' });
-    const sub = !person.active ? t('partage.personnes.desactive') : beneficiary ? t('partage.personnes.destinataire') : null;
+    // N'utilise pas la fonction (case de l'Admin) : grisée, sauf déjà membre
+    const unused = !guests.has(person.id) && ((note && person.uses?.notes === false) || (project && person.uses?.projects === false));
+    const sub = !person.active ? t('partage.personnes.desactive')
+      : unused ? t(note ? 'partage.personnes.sansNotes' : 'partage.personnes.sansProjets')
+        : beneficiary ? t('partage.personnes.destinataire') : null;
     // Un invité, dans l'annuaire de l'Admin seulement (rôle envoyé à lui seul)
     const discreet = person.role === 'guest' && person.active
       ? h('span', { class: 'discreet-tag' }, icon('eye-off'), t('partage.personnes.invite')) : null;
-    const tick = h('button', { class: 'tick-row', type: 'button', role: 'checkbox' },
+    const tick = h('button', { class: 'tick-row', type: 'button', role: 'checkbox', disabled: unused, 'aria-disabled': unused ? 'true' : null },
       box,
       avatar(person.displayName, { second: true }),
       h('span', { class: 'grow share__name' }, h('span', { class: 'row__title' }, person.displayName),
@@ -126,18 +137,19 @@ export function peoplePicker({ me, users, members, beneficiaryId = null, note = 
       if (project && access) access.hidden = !on;
     };
     tick.addEventListener('click', () => {
+      if (unused) return;
       if (guests.has(person.id)) guests.delete(person.id);
       else guests.add(person.id);
       paintRow();
     });
     paintRow();
-    return h('div', { class: `share__person${project ? ' share__person--3' : ''}` }, tick, access);
+    return h('div', { class: `share__person${project ? ' share__person--3' : ''}${unused ? ' is-off' : ''}` }, tick, access);
   };
 
   const element = h('div', { class: 'share share--sheet' },
     lockedRow(me, t('partage.personnes.vous', { name: me.displayName }), t('partage.personnes.proprietaire')),
     people.map((person) => personRow(person)));
   // Focus sur la première case à l'ouverture (jamais un champ de saisie)
-  element.querySelector('button.tick-row')?.setAttribute('data-initial-focus', 'true');
+  element.querySelector('button.tick-row:not([disabled])')?.setAttribute('data-initial-focus', 'true');
   return { element, payload: () => membersPayload({ guests, rights, beneficiaryId }) };
 }

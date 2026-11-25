@@ -11,7 +11,7 @@
 
 import { h, icon } from './dom.js';
 import { navigate } from './router.js';
-import { app, onDataChange } from './app.js';
+import { app, onDataChange, shownFeatures } from './app.js';
 import { inboxUnread } from './store.js';
 import { firstScreen } from './home-tiles.js';
 import { t } from './i18n.js';
@@ -41,7 +41,7 @@ export function bell() {
 export function topBell(onLeave) {
   const notifications = bell();
   const paint = () => {
-    notifications.el.hidden = firstScreen(app.data.home, app.data.features) === 'home';
+    notifications.el.hidden = firstScreen(app.data.home, shownFeatures()) === 'home';
     notifications.paint();
   };
   paint();

@@ -14,7 +14,7 @@
 import { h, icon, avatar } from '../dom.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
-import { app, resetLocalCopy, pendingCount, logOut, providerName, applyLanguage } from '../app.js';
+import { app, resetLocalCopy, pendingCount, logOut, providerName, applyLanguage, allowedNow } from '../app.js';
 import { put, errorMessage } from '../api.js';
 import { t, getLocale, READY_LOCALES, LOCALE_NAMES } from '../i18n.js';
 import { toast, confirmDialog, onPc } from '../ui.js';
@@ -70,8 +70,10 @@ export function renderAccount(onLeave = () => {}) {
       h('h2', { class: 'section-title' }, t('compte.apparence')),
       h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': t('compte.theme') }, options)),
       languageBlock(),
-      // Accès des assistants IA : seulement s'il est activé sur le serveur
-      user.claudeUrl ? [
+      // Accès des assistants IA : seulement s'il est activé sur le serveur,
+      // et autorisé à ce compte par l'Admin (case « Assistants IA »,
+      // docs/cadrage-comptes.md, étape 2 ; relue à chaque synchronisation)
+      user.claudeUrl && allowedNow().mcp ? [
         h('h2', { class: 'section-title' }, t('compte.claude')),
         h('div', { class: 'group' },
           row({ iconName: 'link', title: t('compte.claude.connexions'), sub: t('compte.claude.connexions.detail'), onClick: () => navigate('claudeConnections') })),

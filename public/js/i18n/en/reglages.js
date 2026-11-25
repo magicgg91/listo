@@ -65,6 +65,12 @@ export default {
   'reglages.fonctions.projets': 'Projects',
   'reglages.fonctions.projets.detail': 'Boards of cards sorted into columns (ideas, in progress, done…), to share.',
   'reglages.fonctions.note': 'Applies to all your devices.',
+  // Features allowed by the Admin (docs/cadrage-comptes.md, step 2)
+  'reglages.fonctions.note.autorisees': 'Only the features the Admin allowed for your account are offered. Applies to all your devices.',
+  'reglages.fonctions.aucune': 'No feature is open for your account yet: the Admin takes care of it.',
+  'reglages.fonctions.detail.notes': 'Notes',
+  'reglages.fonctions.detail.projets': 'Projects',
+  'reglages.fonctions.detail.aucune': 'None for now',
 
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Single-key shortcuts enabled',

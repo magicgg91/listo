@@ -55,6 +55,8 @@ export default {
   },
   'comptes.identifiant.existe': 'This username already exists.',
   'comptes.rienAModifier': 'Nothing to change.',
+  'comptes.fonctions.invalides': 'Invalid allowed features: notes, projects, projectsCreate or mcp, true or false.',
+  'comptes.fonctions.admin': 'An Admin has access to everything: no features to allow.',
   'comptes.actif.invalide': 'Invalid “active” value (true or false).',
   'comptes.soiMeme.desactiver': 'You can\'t disable your own account or remove your own Admin role.',
   'comptes.dernierAdmin': 'There must always be at least one active Admin.',

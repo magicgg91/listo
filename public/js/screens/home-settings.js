@@ -24,12 +24,11 @@
 
 import { h, icon, replace } from '../dom.js';
 import { goBack } from '../router.js';
-import { app, onDataChange } from '../app.js';
+import { app, onDataChange, shownFeatures } from '../app.js';
 import * as actions from '../actions.js';
 import { announce } from '../announce.js';
 import { drawWhenIdle } from '../ui.js';
 import { normalizeHome, ALWAYS_SHOWN, tilesFor, startScreens, firstScreen, mergeTileOrder } from '../home-tiles.js';
-import { normalizeFeatures } from '../features.js';
 import { topbar } from './settings.js';
 import { t } from '../i18n.js';
 
@@ -240,7 +239,7 @@ export function renderHomeSettings(onLeave = () => {}) {
   // changé ; le bouton qui avait le focus le retrouve
   function draw(force = false) {
     const home = normalizeHome(app.data.home);
-    const features = normalizeFeatures(app.data.features);
+    const features = shownFeatures();
     const key = JSON.stringify([home, features, reordering]);
     if (!force && key === drawn) return;
     drawn = key;

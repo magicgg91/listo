@@ -26,7 +26,7 @@ import { h, icon, iconButton, avatar, replace, field, errorNote } from '../dom.j
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList, todayKey } from '../format.js';
 import { nowTime } from '../due-time.js';
-import { app, onDataChange, refreshData, isDesktop } from '../app.js';
+import { app, onDataChange, refreshData, isDesktop, canCreateProjects } from '../app.js';
 import { mayShareOwn } from '../access.js';
 import { syncPill, toast, drawWhenIdle, openMenu, openSheet, confirmDialog, offlineBanner, onPc } from '../ui.js';
 import { topBell } from '../bell.js';
@@ -114,7 +114,7 @@ export function projectMenuItems(project, { inside = false, onGone = () => {} } 
     delete: () => ({ icon: 'trash', label: t('projets.menu.supprimer'), danger: true, separated: true, onSelect: () => askDelete(project, onGone) }),
     leave: () => ({ icon: 'logout', label: t('projets.menu.quitter'), danger: true, separated: true, onSelect: () => askLeave(project, onGone) }),
   };
-  return projectMenuEntries(project, { inside, canShare: mayShareOwn(app.user?.role) }).map((entry) => items[entry]());
+  return projectMenuEntries(project, { inside, canShare: mayShareOwn(app.user?.role), canCreate: canCreateProjects() }).map((entry) => items[entry]());
 }
 
 // Dupliquer (tout membre, Lecture seule compris ; décision du 25 novembre
@@ -259,12 +259,19 @@ function projectCard(project) {
   return card;
 }
 
-// Aucun projet (installation neuve) : phrase d'aide et « Nouveau projet »
-const emptyProjects = () => h('div', { class: 'empty' },
-  h('div', { class: 'empty__icon' }, icon('kanban', 'icon--lg')),
-  h('h2', { class: 'empty__title' }, t('projets.vide.titre')),
-  h('p', { class: 'empty__text' }, t('projets.vide.texte')),
-  h('button', { class: 'btn btn--primary', type: 'button', onClick: () => openNewProject() }, icon('plus', 'icon--sm'), t('projets.nouveau')));
+// Aucun projet (installation neuve) : phrase d'aide et « Nouveau projet » ;
+// sans « Peut créer ses propres projets » (case de l'Admin), seulement
+// « Les projets qu'on vous partagera apparaîtront ici. »
+const emptyProjects = () => (canCreateProjects()
+  ? h('div', { class: 'empty' },
+    h('div', { class: 'empty__icon' }, icon('kanban', 'icon--lg')),
+    h('h2', { class: 'empty__title' }, t('projets.vide.titre')),
+    h('p', { class: 'empty__text' }, t('projets.vide.texte')),
+    h('button', { class: 'btn btn--primary', type: 'button', onClick: () => openNewProject() }, icon('plus', 'icon--sm'), t('projets.nouveau')))
+  : h('div', { class: 'empty' },
+    h('div', { class: 'empty__icon' }, icon('kanban', 'icon--lg')),
+    h('h2', { class: 'empty__title' }, t('projets.vide.titre')),
+    h('p', { class: 'empty__text' }, t('projets.vide.partages'))));
 
 const noResult = (query, search) => h('div', { class: 'empty' },
   h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
@@ -288,7 +295,12 @@ export function renderProjects(onLeave) {
     search.field.append(keycap('/'));
   } else tabBar().loupe.set(search.loupe);
 
+  // « + » (téléphone) : seulement avec « Peut créer ses propres projets »
+  // (case de l'Admin ; maquette design/comptes invite-projets-1 : sans « + ») ;
+  // suit le réglage s'il change pendant que l'écran est ouvert
+  const plus = pc ? null : iconButton('plus', t('projets.nouveau'), () => openNewProject(), 'icon-btn--accent');
   const draw = () => {
+    if (plus) plus.hidden = !canCreateProjects();
     if (!app.data.loaded) {
       search.show(loading());
       return;
@@ -327,7 +339,7 @@ export function renderProjects(onLeave) {
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('projets.titre'))),
       syncPill(() => refreshData({ full: true }), { inBar: true }),
       topBell(onLeave),
-      iconButton('plus', t('projets.nouveau'), () => openNewProject(), 'icon-btn--accent')),
+      plus),
     search.bar,
     content);
 }

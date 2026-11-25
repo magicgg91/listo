@@ -71,7 +71,10 @@ export const projectMatches = (project, query) => !isSearching(query) || matches
 // puis, après un trait, delete (propriétaire) ou leave.
 // canShare : faux pour un compte invité (docs/cadrage-comptes.md : il ne
 // partage jamais ce qu'il possède ; « Personnes » à la place de « Partager »)
-export function projectMenuEntries(project, { inside = false, canShare = true } = {}) {
+// canCreate : faux sans « Peut créer ses propres projets » (case de
+// l'Admin, docs/cadrage-comptes.md, étape 2) : dupliquer crée un projet,
+// « Dupliquer le projet » n'est pas proposé
+export function projectMenuEntries(project, { inside = false, canShare = true, canCreate = true } = {}) {
   const rights = projectRights(project?.role);
   if (!rights.view) return [];
   const shared = (project.members ?? []).length > 1;
@@ -79,7 +82,7 @@ export function projectMenuEntries(project, { inside = false, canShare = true } 
     inside ? null : 'open',
     rights.share && canShare ? 'share' : 'people',
     rights.settings ? 'settings' : null,
-    rights.duplicate ? 'duplicate' : null,
+    rights.duplicate && canCreate ? 'duplicate' : null,
     'cardTrash',
     'push',
     shared ? 'news' : null,

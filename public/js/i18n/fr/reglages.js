@@ -65,6 +65,12 @@ export default {
   'reglages.fonctions.projets': 'Projets',
   'reglages.fonctions.projets.detail': 'Des tableaux de cartes rangées en colonnes (idées, en cours, fait…), à partager.',
   'reglages.fonctions.note': 'Vaut pour tous vos appareils.',
+  // Fonctions autorisées par l'Admin (docs/cadrage-comptes.md, étape 2)
+  'reglages.fonctions.note.autorisees': 'Seules les fonctions que l\'Admin a autorisées pour votre compte sont proposées. Vaut pour tous vos appareils.',
+  'reglages.fonctions.aucune': 'Aucune fonction n\'est encore ouverte pour votre compte : l\'Admin s\'en charge.',
+  'reglages.fonctions.detail.notes': 'Notes',
+  'reglages.fonctions.detail.projets': 'Projets',
+  'reglages.fonctions.detail.aucune': 'Aucune pour l\'instant',
 
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Raccourcis à une touche activés',

@@ -739,3 +739,9 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .statusbar--progress > .topbar__status { flex: 0 100 auto; }
 .statusbar--progress > .fold-all { flex: none; }
 .statusbar--progress > .list-progress { margin-right: auto; }
+
+/* Projets (screens/projects.js, project-settings.js, project-card.js) :
+   formulaires des feuilles (nom, couleur, place) et bouton sous une liste
+   de choix */
+.kform { display: flex; flex-direction: column; gap: var(--space-2); }
+.kform__more { margin-top: var(--space-2); }

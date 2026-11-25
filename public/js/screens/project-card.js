@@ -6,8 +6,13 @@
 // personnes attribuées, l'échéance (case « Fait » puis la date et l'heure,
 // sur une ligne ; le rappel dessous, en petit), la priorité (quand l'option
 // du projet est allumée), la description (mise en forme des notes, cases
-// et « 2/3 », screens/card-description.js) et les liens. (Commentaires et
-// historique : étape 3.)
+// et « 2/3 », screens/card-description.js) et les liens.
+//
+// Étape 3 : les onglets « Commentaires » et « Historique »
+// (screens/card-activity.js ; écrire un commentaire : la barre en verre en
+// bas du téléphone, sous les commentaires sur ordinateur), « Suivre » /
+// « Ne plus suivre » (menu ⋮ ; colonne Actions sur ordinateur), et la page
+// Notifications : ouvrir la carte rend lues ses notifications.
 //
 // - Téléphone : un écran entier, comme une note : barre du haut (retour au
 //   projet, pastille d'état, menu ⋮ de la carte), titre en grand, colonne
@@ -61,9 +66,12 @@ import {
 import * as projectActions from '../project-actions.js';
 import { singleKeysOn, keycap } from '../shortcuts.js';
 import { labelChip } from './note-labels.js';
-import { liveProject, rightsOn, cardLabels, cardMenuItems, openMoveSheet, duplicateCard, deleteCard, cardDue, PRIORITY_TEXTS } from './project.js';
+import { liveProject, rightsOn, cardLabels, cardMenuItems, openMoveSheet, duplicateCard, deleteCard, cardDue, PRIORITY_TEXTS, followItem } from './project.js';
 import { openLabelSheet } from './project-settings.js';
 import { cardDescription } from './card-description.js';
+import { cardActivity } from './card-activity.js';
+import { inboxRowsFor } from '../store.js';
+import * as actions from '../actions.js';
 
 // La carte (présente, dans un projet ouvert que je vois), ou null
 function cardOf(projectId, cardId) {
@@ -577,6 +585,8 @@ export function renderProjectCard(projectId, cardId, onLeave) {
   const head = h('div', { class: 'kc__head' });
   const fields = h('div', { class: 'group kfields' });
   const links = h('div', { class: 'kc__links' });
+  const activity = cardActivity({ cardId, getFound: found, pc: false });
+  onLeave(activity.stop);
   let built = false;
   const menuLabel = t('projets.plusActions');
   const back = () => goBack('project', { id: projectId });
@@ -610,10 +620,13 @@ export function renderProjectCard(projectId, cardId, onLeave) {
       project.priorityEnabled ? phoneField('flag', t('projets.priorite'), priorityValue(card, project)) : null);
     replace(links, linksPart(card, project));
     description.draw();
+    activity.draw();
+    scroll.classList.toggle('scroll--under-dock', !activity.compose.hidden);
+    markCardRead(card);
     // La description reste le même élément (pas redessinée pendant la saisie)
     if (!built) {
       built = true;
-      replace(body, title.el, head, fields, description.el, links);
+      replace(body, title.el, head, fields, description.el, links, activity.el);
     }
   };
   const idle = drawWhenIdle(body, draw);
@@ -632,10 +645,21 @@ export function renderProjectCard(projectId, cardId, onLeave) {
       syncPill(() => refreshData({ full: true })),
       menuButton),
     scroll,
+    // Écrire un commentaire (barre en verre ; cachée pendant la saisie de
+    // la description)
+    activity.compose,
     // La barre de mise en forme, en bas (sur le clavier), pendant la saisie
     // de la description
     description.tools.el);
 }
+
+// Notifications de la page Notifications qui ouvrent cette carte : lues
+// (la carte est ouverte)
+function markCardRead(card) {
+  const ids = inboxRowsFor(app.data, { cardId: card.id });
+  if (ids.length) actions.markInboxRead(ids);
+}
+
 
 // --- Ordinateur : la fenêtre au centre, par-dessus le projet ---
 // Fermée par la croix ou Échap (pas par un changement d'écran) : retour au
@@ -656,6 +680,8 @@ export function openProjectCardPanel(projectId, cardId) {
   const sub = h('p', { class: 'kdialog__sub' });
   const readonly = h('div', {});
   const links = h('div', { class: 'kc__links' });
+  const activity = cardActivity({ cardId, getFound: found, pc: true });
+  leaving.push(activity.stop);
   let built = false;
   let close = () => {};
   const closeButton = iconButton('close', t('projets.carte.fermer'), () => close(), 'kdialog__close');
@@ -676,15 +702,21 @@ export function openProjectCardPanel(projectId, cardId) {
     replace(readonly, readOnlyNote(card, project));
     replace(links, linksPart(card, project));
     description.draw();
+    activity.draw();
+    markCardRead(card);
     if (!built) {
       built = true;
-      replace(main, title.el, sub, readonly, description.el, links);
+      replace(main, title.el, sub, readonly, description.el, links, activity.el);
     }
     const section = (text) => h('h2', { class: 'kc__section' }, text);
     const actions = [
       can.move ? h('button', { class: 'kside', type: 'button', 'data-shortcut': 'm', 'aria-keyshortcuts': 'M', 'aria-haspopup': 'dialog', onClick: () => openMoveSheet(card.id) },
         icon('move'), t('projets.carte.deplacer'), keycap('M')) : null,
       can.duplicate ? h('button', { class: 'kside', type: 'button', onClick: () => duplicateCard(card) }, icon('copy'), t('projets.carte.dupliquer')) : null,
+      (() => {
+        const follow = followItem(card);
+        return h('button', { class: 'kside', type: 'button', onClick: follow.onSelect }, icon(follow.icon), follow.label);
+      })(),
       can.remove ? h('button', { class: 'kside kside--danger', type: 'button', onClick: () => deleteCard(card, () => close()) }, icon('trash'), t('projets.carte.supprimer')) : null,
     ].filter(Boolean);
     replace(side,

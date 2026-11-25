@@ -44,4 +44,6 @@ export default {
   'accueil.projets.aucuneCarte': 'No cards for you',
   'accueil.projets.retard': 'Overdue',
   'accueil.projets.cartes.lu': { one: 'Projects, {count} card for you', other: 'Projects, {count} cards for you' },
+  'accueil.projets.cartes.lu.nouveautes': { one: 'Projects, {count} card for you, new activity', other: 'Projects, {count} cards for you, new activity' },
+  'accueil.projets.lu.nouveautes': 'Projects, new activity',
 };

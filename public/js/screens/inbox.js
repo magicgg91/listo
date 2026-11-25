@@ -15,7 +15,8 @@
 //   « Non lue » dans le nom lu (jamais la couleur seule).
 // - Ouvrir la page ne marque RIEN comme lu (décision du 23 novembre 2026) :
 //   toucher une ligne la marque lue et ouvre sa cible (liste, fiche d'un
-//   élément, note, Échéances) ; « Tout marquer comme lu » en haut. Une
+//   élément, note, Échéances, projet, carte ; partage d'un projet reçu
+//   projets coupés : Réglages › Fonctions) ; « Tout marquer comme lu » en haut. Une
 //   cible disparue (liste supprimée, partage retiré) : un message, rien ne s'ouvre.
 // - Effacer : glisser une ligne vers la gauche (raccourci, comme les
 //   lignes d'une liste), ou son bouton ⋮ (clavier, lecteurs d'écran ;
@@ -28,7 +29,8 @@
 //   principale, avec les seules entrées fixes du menu de gauche.
 // - Notes coupées (Réglages › Fonctions, features.js) : les lignes des
 //   notes ne sont pas montrées (gardées : elles reviennent quand les notes
-//   sont rallumées ; inboxShownRows, store.js).
+//   sont rallumées ; inboxShownRows, store.js) ; de même pour les projets,
+//   sauf la ligne « Partage » (l'invitation à les allumer).
 // Textes posés avec textContent (h()) ; aucun curseur mis tout seul.
 
 import { h, icon, iconButton, replace } from '../dom.js';
@@ -49,6 +51,7 @@ export const INBOX_ICONS = {
   digest: 'calendar',
   wishes: 'gift',
   sharing: 'users',
+  comment: 'comment',
 };
 
 // Jour local d'une date ISO (« 2026-11-23 »)
@@ -82,7 +85,8 @@ export function groupByDay(rows) {
 }
 
 // Message d'une cible disparue
-const unavailableText = (row) => t(row.targetType === 'note' ? 'inbox.indisponible.note' : row.targetType === 'item' ? 'inbox.indisponible.element' : 'inbox.indisponible.liste');
+const UNAVAILABLE = { note: 'inbox.indisponible.note', item: 'inbox.indisponible.element', project: 'inbox.indisponible.projet', card: 'inbox.indisponible.carte' };
+const unavailableText = (row) => t(UNAVAILABLE[row.targetType] ?? 'inbox.indisponible.liste');
 
 // Ouvre la cible d'une ligne (et la marque lue)
 export function openRow(row) {
@@ -101,6 +105,9 @@ export function openRow(row) {
       break;
     case 'note': navigate('note', { id: target.noteId }); break;
     case 'deadlines': navigate('deadlines'); break;
+    case 'project': navigate('project', { id: target.projectId }); break;
+    case 'card': navigate('projectCard', { id: target.projectId, cardId: target.cardId }); break;
+    case 'features': navigate('features'); break;
     default:
   }
 }

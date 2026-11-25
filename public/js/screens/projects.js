@@ -59,12 +59,13 @@ export function roleLabel(role) {
 // Personnes (les autres), Réglages du projet (propriétaire et « Peut
 // modifier », dans le projet), Dupliquer le projet (tout membre), Cartes
 // supprimées (dans le projet), Masquer / Afficher les nouveautés (projet
-// partagé) ; après un trait, Supprimer (propriétaire) ou Quitter le projet.
+// partagé), Couper / Réactiver les notifications ; après un trait, Supprimer (propriétaire) ou Quitter le projet.
 // Seulement ce que mon rôle permet ; le serveur revérifie chaque droit.
 export function projectMenuItems(project, { inside = false, onGone = () => {} } = {}) {
   const rights = projectRights(project.role);
   const shared = (project.members ?? []).length > 1;
   const muted = projectNewsMuted(app.data, project.id);
+  const pushMuted = Boolean(app.data.projectMine?.[project.id]?.mutedPush);
   return [
     inside ? null : { icon: 'kanban', label: t('projets.menu.ouvrir'), onSelect: () => navigate('project', { id: project.id }) },
     rights.share
@@ -81,6 +82,17 @@ export function projectMenuItems(project, { inside = false, onGone = () => {} } 
         toast(muted ? t('projets.nouveautes.affichees') : t('projets.nouveautes.masquees'), { low: true });
       },
     } : null,
+    // « Couper les notifications » de ce projet (page Notifications et
+    // téléphone ; les rappels compris) : réglage à moi, indépendant des
+    // nouveautés
+    {
+      icon: 'bell',
+      label: pushMuted ? t('projets.menu.notifications.reactiver') : t('projets.menu.notifications.couper'),
+      onSelect: () => {
+        projectActions.setProjectState(project.id, { mutedPush: !pushMuted });
+        toast(pushMuted ? t('projets.notifications.reactivees') : t('projets.notifications.coupees'), { low: true });
+      },
+    },
     rights.trash
       ? { icon: 'trash', label: t('projets.menu.supprimer'), danger: true, separated: true, onSelect: () => askDelete(project, onGone) }
       : { icon: 'logout', label: t('projets.menu.quitter'), danger: true, separated: true, onSelect: () => askLeave(project, onGone) },

@@ -1832,6 +1832,48 @@ span.nf-task__box::after { display: none; }
 .kfilter__rule { margin: var(--space-2) 2px 0; }
 .pfilter .avatar { width: 20px; height: 20px; border: 0; font-size: 10px; }
 
+/* 16.47 Commentaires et historique d'une carte (docs/cadrage-projets.md,
+   étape 3 ; maquettes design/projets carte-2, carte-3 et pc-carte-1,
+   25 novembre 2026). Onglets « Commentaires · 2 » / « Historique » (.tabs
+   du kit, role="tablist") ; un commentaire (.kcomment : pastille, bulle
+   .kcomment__bubble avec le prénom, la date et « modifié », le texte
+   simple, retours à la ligne gardés, adresses cliquables, puis
+   « Modifier » et « Supprimer » .kcomment__acts) ; commentaire importé par
+   un assistant IA : bulle en pointillés (.kcomment--imported) ; historique
+   (.khist : pastille, phrase, date en petit). Écrire : téléphone, la barre
+   en verre en bas (.kc__compose, cachée pendant la saisie de la
+   description) ; ordinateur, sous les commentaires (.kcompose : pastille,
+   champ, « Envoyer »). Point des nouveautés dans le titre d'une tuile
+   (.tile__head .tile__dot). */
+.kc .tabs { margin: 0 -4px; padding: 0; }
+.kc__panel { padding-top: 12px; }
+.kc__panel[hidden] { display: none; }
+.kcomments { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.kcomment { display: flex; gap: 10px; }
+.kcomment .avatar { flex: none; width: 30px; height: 30px; border: 0; font-size: 12px; }
+.kcomment__bubble { flex: 1; min-width: 0; padding: 8px 12px 10px; border-radius: var(--radius-md); background: var(--color-neutral-soft); }
+.kcomment__who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-weight: 700; }
+.kcomment__when { font-size: var(--text-sm); font-weight: 500; color: var(--color-text-2); }
+.kcomment__text { margin: 2px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.kcomment__text a { color: var(--color-accent-ink); text-decoration: underline; }
+.kcomment__acts { display: flex; gap: 14px; margin-top: 4px; }
+.kcomment__acts button { position: relative; min-height: 32px; padding: 0; border: 0; background: transparent; color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; text-decoration: underline; }
+.kcomment__acts button::after { content: ""; position: absolute; inset: -6px -6px; }
+.kcomment--imported .kcomment__bubble { border: 1px dashed var(--color-control); background: transparent; }
+.kcomment__edit { min-height: 140px; resize: vertical; }
+.khist { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.khist__row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--color-border); }
+.khist__row:last-child { border-bottom: 0; }
+.khist__row .avatar { flex: none; width: 26px; height: 26px; border: 0; font-size: 11px; }
+.khist__text { flex: 1; min-width: 0; line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.khist__when { display: block; margin-top: 2px; font-size: var(--text-sm); color: var(--color-text-2); }
+.screen:has(.note-tools--dock:not([hidden])) .kc__compose { display: none; }
+.kcompose { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; }
+.kcompose .avatar { flex: none; width: 30px; height: 30px; border: 0; font-size: 12px; }
+.kcompose__form { display: flex; flex: 1; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 0; }
+.kcompose__input { width: 100%; min-height: 44px; resize: vertical; }
+.tile__head .tile__dot { margin-left: -4px; }
+
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }
 .stage__row[data-theme="dark"] { --stage: #060A12; }

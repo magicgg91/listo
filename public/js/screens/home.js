@@ -48,8 +48,8 @@ import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } 
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
 import { projectsInOrder, openNewProject } from './projects.js';
-import { myCards, urgentCards } from '../project-view.js';
-import { cardDue } from './project.js';
+import { myCards, urgentCards, projectUnread } from '../project-view.js';
+import { cardDue, cardIsNew } from './project.js';
 import { nowTime } from '../due-time.js';
 import { isNoteUnread } from '../store.js';
 import { computeGifts, recentGifts } from '../gifts.js';
@@ -67,9 +67,10 @@ import { t } from '../i18n.js';
 // muette pour les lecteurs d'écran (le nombre est dans spoken)
 // (« toute la largeur » sur le téléphone : tile--wide, posé par renderHome
 // d'après tileLayout)
-function tile(name, iconName, onOpen, rows, { spoken = null, count = null } = {}) {
+function tile(name, iconName, onOpen, rows, { spoken = null, count = null, dot = false } = {}) {
   return h('section', { class: 'card tile', 'aria-label': name },
     h('button', { class: 'tile__head', type: 'button', 'aria-label': spoken, onClick: onOpen }, icon(iconName), h('span', { class: 'tile__name' }, name),
+      dot ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
       count ? h('span', { class: 'count', 'aria-hidden': 'true' }, String(count)) : null),
     rows);
 }
@@ -215,6 +216,8 @@ function giftsTile() {
 function projectsTile() {
   const projects = projectsInOrder();
   const open = () => navigate('projects');
+  // Point des nouveautés (étape 3) : un projet a du nouveau pour moi
+  const news = projects.some((project) => projectUnread(app.data, project.id));
   if (!projects.length) {
     return tile(t('accueil.projets'), 'kanban', open,
       [emptyText(t('accueil.projets.aucun')), rowsOf([addRow(t('accueil.projets.nouveau'), () => openNewProject())])]);
@@ -223,7 +226,8 @@ function projectsTile() {
   const mine = myCards(app.data, app.user.id);
   if (!mine.length) {
     return tile(t('accueil.projets'), 'kanban', open,
-      [emptyText(t('accueil.projets.aucuneCarte')), rowsOf([row({ label: t('accueil.projets'), onClick: open })])]);
+      [emptyText(t('accueil.projets.aucuneCarte')), rowsOf([row({ label: t('accueil.projets'), onClick: open })])],
+      { spoken: news ? t('accueil.projets.lu.nouveautes') : null, dot: news });
   }
   return tile(t('accueil.projets'), 'kanban', open, rowsOf(urgentCards(app.data, app.user.id, today, nowTime()).map((card) => {
     const project = projects.find((p) => p.id === card.projectId);
@@ -231,15 +235,18 @@ function projectsTile() {
     const due = cardDue(card);
     const late = due?.state === 'late';
     const parts = [project?.name ?? '', column?.name ?? '', late ? t('accueil.projets.retard') : due?.when].filter(Boolean);
+    const fresh = cardIsNew(card);
     return h('button', {
       class: 'tile__row tile__row--two', type: 'button',
       onClick: () => navigate('projectCard', { id: card.projectId, cardId: card.id }),
     },
     h('span', { class: 'tile__label' },
       h('span', { class: 'tile__strong' }, card.title),
-      h('span', { class: `tile__sub${late ? ' tile__sub--late' : ''}` }, parts.join(' · '))),
+      h('span', { class: `tile__sub${late ? ' tile__sub--late' : ''}` }, parts.join(' · ')),
+      fresh ? h('span', { class: 'visually-hidden' }, t('projets.face.nouveautes')) : null),
+    fresh ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
     icon('chev-r', 'icon--sm'));
-  })), { spoken: t('accueil.projets.cartes.lu', { count: mine.length }), count: mine.length });
+  })), { spoken: t(news ? 'accueil.projets.cartes.lu.nouveautes' : 'accueil.projets.cartes.lu', { count: mine.length }), count: mine.length, dot: news });
 }
 
 // Compte : « Mon compte », « Notifications » (la page Notifications, sans

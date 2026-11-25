@@ -589,7 +589,7 @@ Décisions du propriétaire du 24 novembre 2026 ; maquettes « barre au-dessus d
 
 ## Ajout : Projets (25 novembre 2026)
 
-Cadrage `docs/cadrage-projets.md`, maquettes `design/projets/` (référence de chaque écran, en clair et en sombre). Les composants de `design/projets/listo-projets.css` sont passés dans `listo.css` (sections 16.35 à 16.46, identiques dans `public/css/listo.css`), ajustés à la construction ; les six icônes de `design/projets/icons-nouvelles.svg.html` sont dans le sprite (`#i-kanban`, `#i-comment`, `#i-move`, `#i-grip`, `#i-filter`, `#i-history`).
+Cadrage `docs/cadrage-projets.md`, maquettes `design/projets/` (référence de chaque écran, en clair et en sombre). Les composants de `design/projets/listo-projets.css` sont passés dans `listo.css` (sections 16.35 à 16.47, identiques dans `public/css/listo.css`), ajustés à la construction ; les six icônes de `design/projets/icons-nouvelles.svg.html` sont dans le sprite (`#i-kanban`, `#i-comment`, `#i-move`, `#i-grip`, `#i-filter`, `#i-history`).
 
 - **16.35** couleur d'une colonne : `.c-<couleur>` (les huit couleurs des étiquettes) et `.coldot` ; le nom est toujours écrit.
 - **16.36** bandeau du bas à six boutons : `.tabbar--6` (libellés en 11 px), pastille sur six places.
@@ -603,3 +603,4 @@ Cadrage `docs/cadrage-projets.md`, maquettes `design/projets/` (référence de c
 - **16.44** réglages du projet : `.col-row` (poignée à glisser), `.col-place`, `.group-title`, `.kset`.
 - **16.45** choix du droit à trois options sous la personne : `.share__person--3`, `.share__access--3`, `.share-roles`.
 - **16.46** détails d'une carte (étape 2) : repères de la face (`.kcard__meta`, `.due--done`, `.kcount--all`), personnes (`.kfield__person`), échéance sur une ligne (`.kdue`, `.kdone`, `.kdue__date`, `.kdue__remind`), priorité (`.kprio`), description (`.kc__block`, `.kc__desc`, `.kc__check`), liens (`.klink`, `.klink--add`), filtre du téléphone (`.kfilter__labels`, `.kfilter__rule`), `.pfilter .avatar`.
+- **16.47** commentaires et historique d'une carte (étape 3) : onglets (`.tabs` du kit), `.kc__panel`, `.kcomments`, `.kcomment` (`--imported` : bulle en pointillés), `.kcomment__acts`, `.khist`, écrire (`.kc__compose` : barre en verre du téléphone ; `.kcompose` sur ordinateur), point des nouveautés dans le titre d'une tuile (`.tile__head .tile__dot`).

@@ -62,13 +62,23 @@ import {
   visibleCards, liveCards, cardCount, otherMembers, cleanFilter, loadProjectFilter, saveProjectFilter, emptyFilter, filterCount, cardShown, NO_ONE,
   loadProjectColumn, saveProjectColumn, startColumn, neighbourColumn, cardDueState, cardMarkers,
 } from '../project-view.js';
-import { columnCards } from '../project-store.js';
+import { columnCards, followingCard, cardCommentsOf } from '../project-store.js';
+import { inboxRowsFor } from '../store.js';
+import * as actions from '../actions.js';
 import * as projectActions from '../project-actions.js';
 import { cardDrag, columnSwipe } from '../project-drag.js';
 import { labelChip } from './note-labels.js';
 import { projectMenuItems } from './projects.js';
 import { openProjectShare } from './share-panel.js';
 import { openColumnSheet, askDeleteColumn } from './project-settings.js';
+
+// Cartes nouvelles pour moi au moment où j'ai ouvert le projet : projet ->
+// identifiants (point des nouveautés sur leur face pendant la visite)
+const visitNews = new Map();
+// Une carte a un point des nouveautés ? (changée par d'autres depuis ma
+// dernière visite)
+export const cardIsNew = (card) => Boolean(visitNews.get(card.projectId)?.has(card.id))
+  || (app.data.projectMine?.[card.projectId]?.newCards ?? []).includes(card.id);
 
 // Projet ouvert (pas dans la corbeille)
 export function liveProject(projectId) {
@@ -90,7 +100,8 @@ export function labelRow(labels) {
 }
 
 // --- Menu d'une carte (⋮ de la carte ouverte ; clic droit, touche Menu sur
-// ordinateur) : Déplacer vers…, Monter, Descendre, Dupliquer, Supprimer,
+// ordinateur) : Déplacer vers…, Monter, Descendre, Dupliquer, Suivre / Ne
+// plus suivre (tous les rôles), Supprimer,
 // seulement ce que mon rôle permet sur CETTE carte ---
 export function cardMenuItems(card, project, { onGone = () => {} } = {}) {
   const can = rightsOn(card, project);
@@ -102,8 +113,25 @@ export function cardMenuItems(card, project, { onGone = () => {} } = {}) {
     can.move && up !== undefined ? { icon: 'arrow-up', label: t('projets.carte.monter'), onSelect: () => projectActions.stepCard(card.id, 'up') } : null,
     can.move && down !== undefined ? { icon: 'arrow-down', label: t('projets.carte.descendre'), onSelect: () => projectActions.stepCard(card.id, 'down') } : null,
     can.duplicate ? { icon: 'copy', label: t('projets.carte.dupliquer'), onSelect: () => duplicateCard(card) } : null,
+    followItem(card),
     can.remove ? { icon: 'trash', label: t('projets.carte.supprimer'), danger: true, separated: true, onSelect: () => deleteCard(card, onGone) } : null,
   ].filter(Boolean);
+}
+
+// « Suivre » / « Ne plus suivre » (menu ⋮ et colonne Actions) : mon choix,
+// gardé même si l'on m'attribue la carte ou que je la commente ensuite
+export function followItem(card) {
+  const following = followingCard(app.data, card, app.user?.id ?? null);
+  return {
+    icon: 'bell',
+    label: following ? t('projets.carte.nePlusSuivre') : t('projets.carte.suivre'),
+    onSelect: () => toggleFollow(card),
+  };
+}
+async function toggleFollow(card) {
+  const following = followingCard(app.data, card, app.user?.id ?? null);
+  await projectActions.followCard(card.id, !following);
+  toast(following ? t('projets.carte.nePlusSuivre.fait') : t('projets.carte.suivre.fait'), { low: true });
 }
 
 // Dupliquer : juste dessous, « (copie) », à moi (même un Contributeur sur
@@ -302,25 +330,31 @@ export function cardFace(card, project) {
   const marks = cardMarkers(card);
   const priority = project.priorityEnabled && card.priority && card.priority !== 'normal' ? card.priority : null;
   const people = (card.assigneeIds ?? []).map((id) => (project.members ?? []).find((m) => m.id === id)?.displayName ?? t('projets.personnes.ancien'));
+  const comments = cardCommentsOf(app.data, card.id).length;
+  const fresh = cardIsNew(card);
   const spoken = [
     due ? due.label : null,
     priority ? t(PRIORITY_TEXTS[priority]) : null,
     marks.described ? t('projets.face.description') : null,
     marks.tasks ? t('projets.cases.lu', { done: marks.tasks.done, count: marks.tasks.total }) : null,
     marks.links ? t('projets.face.liens', { count: marks.links }) : null,
+    comments ? t('projets.face.commentaires', { count: comments }) : null,
     people.length ? t('projets.face.personnes', { names: namesList(people) }) : null,
     can.edit ? null : t('projets.carte.lectureSeulePourVous.court'),
+    fresh ? t('projets.face.nouveautes') : null,
   ].filter(Boolean);
-  const meta = due || priority || marks.described || marks.tasks || marks.links || people.length
+  const meta = due || priority || marks.described || marks.tasks || marks.links || comments || people.length
     ? h('div', { class: 'kcard__meta', 'aria-hidden': 'true' },
       due ? h('span', { class: `due due--${due.state}` }, icon(due.icon), due.state === 'done' ? t('projets.echeance.faitLe', { when: due.when }) : due.when) : null,
       priority ? h('span', { class: `chip kprio-chip${priority === 'high' ? ' chip--high' : ''}` }, icon(priority === 'high' ? 'arrow-up' : 'arrow-down', 'icon--xs'), t(PRIORITY_TEXTS[priority])) : null,
       marks.described ? h('span', { class: 'kcount' }, icon('menu-lines', 'icon--sm')) : null,
       marks.tasks ? h('span', { class: `kcount${marks.tasks.done === marks.tasks.total ? ' kcount--all' : ''}` }, icon('check', 'icon--sm'), `${marks.tasks.done}/${marks.tasks.total}`) : null,
       marks.links ? h('span', { class: 'kcount' }, icon('link', 'icon--sm'), String(marks.links)) : null,
+      comments ? h('span', { class: 'kcount' }, icon('comment', 'icon--sm'), String(comments)) : null,
       people.length ? h('span', { class: 'avatars' }, people.slice(0, 3).map((name, i) => avatar(name, { second: (card.assigneeIds ?? [])[i] !== app.user?.id }))) : null)
     : null;
-  const face = h('article', { class: 'card kcard', 'data-card': card.id },
+  const face = h('article', { class: `card kcard${fresh ? ' is-news' : ''}`, 'data-card': card.id },
+    fresh ? h('span', { class: 'news-badge news-badge--dot', 'aria-hidden': 'true' }) : null,
     h('h3', { class: 'kcard__title' }, h('a', {
       class: 'kcard__link',
       href: pathFor('projectCard', { id: project.id, cardId: card.id }),
@@ -364,9 +398,16 @@ const projectSub = (project, pc) => (pc
 
 // --- Écran ---
 export function renderProject(projectId, onLeave) {
+  // Les cartes nouvelles pour moi gardent leur point pendant toute la
+  // visite (9.1), même une fois le projet vu
+  visitNews.set(projectId, new Set(app.data.projectMine?.[projectId]?.newCards ?? []));
+  onLeave(() => visitNews.delete(projectId));
   // Ouvrir vaut « vu » (sur tous mes appareils), et en quittant aussi : ce
-  // qui est arrivé pendant la visite a été vu
+  // qui est arrivé pendant la visite a été vu ; ses notifications « nouvelles
+  // cartes » de la page Notifications sont lues
   projectActions.markProjectSeen(projectId);
+  const read = inboxRowsFor(app.data, { projectId });
+  if (read.length) actions.markInboxRead(read);
   onLeave(() => projectActions.markProjectSeen(projectId));
   refreshData({ quiet: true });
   return isDesktop() ? renderBoard(projectId, onLeave) : renderPhone(projectId, onLeave);

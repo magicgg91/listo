@@ -46,4 +46,6 @@ export default {
   'accueil.projets.aucuneCarte': 'Aucune carte pour vous',
   'accueil.projets.retard': 'En retard',
   'accueil.projets.cartes.lu': { one: 'Projets, {count} carte pour vous', other: 'Projets, {count} cartes pour vous' },
+  'accueil.projets.cartes.lu.nouveautes': { one: 'Projets, {count} carte pour vous, nouveautés', other: 'Projets, {count} cartes pour vous, nouveautés' },
+  'accueil.projets.lu.nouveautes': 'Projets, nouveautés',
 };

@@ -132,6 +132,7 @@ export default {
         'Signed in with an identity provider ([[sso]]): no password at this step. The screen first asks “Confirm with …”: the provider asks you to sign in again, then you come back to choose the level and the lists, and “Authorize”.',
         'If you didn\'t start the connection yourself, tap “Deny”.',
         'No “AI assistants” section in “My account”? The Admin hasn\'t allowed it for your account ([[roles-comptes]]): the “Authorize an AI assistant” screen says so too.',
+        'Guest account without lists: the screen doesn\'t offer “Some lists”, and the assistant only sees your notes and your projects (if they are on); its list tools answer that lists aren\'t open for your account.',
       ],
     },
     {

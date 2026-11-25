@@ -46,7 +46,9 @@ export default {
         { sub: "Allowed features" },
         "On an account's page (Administration, “Accounts” tab, ⋮ button), under “Role”, the Admin ticks what the person can use. The tick allows; the person then turns the feature on in Settings, “Features” ([[echeances]]). Unticked, the feature disappears from their screens and Listo refuses it; nothing is erased, everything comes back if you tick it again.",
         { ul: [
-          "“Notes” and “Projects”: for a user, ticked at first (lists are always there, without a tick); they turn them on themselves. For a guest, nothing is ticked at first; a ticked feature turns on for them right away, and they can turn it off later.",
+          "“Lists”: for a guest only, first (a user and an Admin always have lists, without a tick). Without it, the guest sees nothing of lists: no “Lists”, no “To give”, none of the lists shared with them (they stay for the other members), and “Due” only if a project they see has the “Due” option on ([[projets-echeances]]). No list can be shared with them: “Doesn't use lists” under their name.",
+          "“Notes” and “Projects”: for a user, ticked at first; they turn them on themselves. For a guest, nothing is ticked at first; a ticked feature (“Lists”, “Notes” or “Projects”) turns on for them right away, and they can turn it off later.",
+          "Unticking “Notes” also stops the public links of their notes, and unticking “Lists” those of their lists; the confirmation says so.",
           "“Can create their own projects” (under “Projects”): without it, neither “New project” nor “Duplicate project”; projects shared with them stay usable.",
           "“AI assistants”: without it, the person can't connect an AI assistant ([[claude-connecter]]), and their connections are disconnected right away.",
           "Note labels are shared by the household: a guest who has notes sees them.",
@@ -55,7 +57,7 @@ export default {
         { sub: "Changing an account's role" },
         { ul: [
           "Administration, “Accounts” tab, the account's ⋮ button: its page opens (on a computer, to the right of the list). Tap “User”, “Guest” or “Admin”.",
-          "From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and turned-on features don't change: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.",
+          "From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and turned-on features don't change, lists included: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.",
           "From “Guest” to “User”: a confirmation says they'll be visible to the whole family again, and will see all the accounts.",
           "A guest doesn't become an Admin directly, nor an Admin a guest: go through “User” first. Nobody changes their own role, and there's always at least one active Admin.",
         ] },

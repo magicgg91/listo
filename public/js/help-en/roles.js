@@ -15,7 +15,7 @@ export default {
         { sub: "“Accounts” tab" },
         { ul: [
           "“Add account” ([[creer-comptes]]).",
-          "The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status.",
+          "The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”, or “Lists, Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status.",
           "An account's ⋮ button: its page, with its “Role” and its “Allowed features” ([[roles-comptes]]), and its “Security”: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used (an account that owns a project, is a member of one or wrote in one has been used).",
           "Role: “User”, “Guest” or “Admin”. There's always at least one active Admin.",
         ] },

@@ -614,7 +614,9 @@ Sur son compte, un invité voit la pastille « Invité » (Réglages, « Mon com
 
 Sur la page d'un compte (Administration, onglet « Comptes », bouton ⋮), sous « Rôle », l'Admin coche ce que la personne peut utiliser. La case autorise ; c'est la personne qui allume ensuite la fonction dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)). Décochée, la fonction disparaît de ses écrans et Listo la refuse ; rien n'est effacé, tout revient si vous la cochez de nouveau.
 
-- « Notes » et « Projets » : pour un utilisateur, cochées au départ (les listes sont toujours là, sans case) ; il les allume lui-même. Pour un invité, rien n'est coché au départ ; une fonction cochée s'allume aussitôt pour lui, et il peut l'éteindre ensuite.
+- « Listes » : pour un invité seulement, en premier (un utilisateur et un Admin ont toujours les listes, sans case). Sans elle, l'invité ne voit rien des listes : ni « Listes », ni « À offrir », ni les listes qu'on lui a partagées (elles restent pour les autres membres), et « Échéances » seulement si un projet qu'il voit a l'option « Échéances » allumée ([7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)). On ne peut pas lui partager de liste : « N'utilise pas les listes » sous son prénom.
+- « Notes » et « Projets » : pour un utilisateur, cochées au départ ; il les allume lui-même. Pour un invité, rien n'est coché au départ ; une fonction cochée (« Listes », « Notes » ou « Projets ») s'allume aussitôt pour lui, et il peut l'éteindre ensuite.
+- Décocher « Notes » arrête aussi les liens publics de ses notes, et décocher « Listes » ceux de ses listes ; la confirmation le dit.
 - « Peut créer ses propres projets » (sous « Projets ») : sans elle, ni « Nouveau projet », ni « Dupliquer le projet » ; les projets qu'on lui partage restent utilisables.
 - « Assistants IA » : sans elle, la personne ne peut pas relier d'assistant IA ([9.9 Connecter un assistant IA](#claude-connecter)), et ses connexions sont déconnectées tout de suite.
 - Les étiquettes des notes sont communes au foyer : un invité qui a les notes les voit.
@@ -623,7 +625,7 @@ Sur la page d'un compte (Administration, onglet « Comptes », bouton ⋮), sous
 **Changer le rôle d'un compte**
 
 - Administration, onglet « Comptes », bouton ⋮ du compte : sa page s'ouvre (sur ordinateur, à droite de la liste). Touchez « Utilisateur », « Invité » ou « Admin ».
-- D'« Utilisateur » à « Invité » : une confirmation dit ce qui change, et ce qu'elle garde (ses fonctions autorisées et allumées ne changent pas : décochez ensuite ce qu'il faut). Ce qui est déjà partagé avec la personne le reste ; ses liens publics sont arrêtés. Impossible tant qu'une liste d'envies lui est destinée.
+- D'« Utilisateur » à « Invité » : une confirmation dit ce qui change, et ce qu'elle garde (ses fonctions autorisées et allumées ne changent pas, listes comprises : décochez ensuite ce qu'il faut). Ce qui est déjà partagé avec la personne le reste ; ses liens publics sont arrêtés. Impossible tant qu'une liste d'envies lui est destinée.
 - D'« Invité » à « Utilisateur » : une confirmation dit qu'elle sera de nouveau visible de toute la famille, et verra tous les comptes.
 - Un invité ne devient pas Admin directement, ni un Admin invité : on passe d'abord par « Utilisateur ». Personne ne change son propre rôle, et il reste toujours au moins un Admin actif.
 
@@ -876,11 +878,13 @@ Réglages, « Accueil » (la première ligne de « Général ») règle l'Accuei
 
 **Choisir ses fonctions**
 
-Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez : les notes (allumées au départ) et les projets (coupés au départ : [7. Projets](#projets)). Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne. Seules les fonctions que l'Admin a autorisées pour votre compte sont proposées ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)).
+Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez : les notes (allumées au départ) et les projets (coupés au départ : [7. Projets](#projets)). Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne. Seules les fonctions que l'Admin a autorisées pour votre compte sont proposées ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)) ; un compte invité y trouve aussi « Listes », quand l'Admin les lui a ouvertes.
 
 - Couper les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l'Accueil est aussi coupé), plus de tuile « Notes » sur l'Accueil ni dans Réglages, « Accueil », plus d'onglet « Notes » dans la « Corbeille » des Réglages ; sur ordinateur, plus d'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s'ouvre sur « Listes ».
 - Notes coupées, vous ne recevez plus rien des notes : ni nouveautés, ni notifications (page Notifications et téléphone). Les autres peuvent toujours partager une note avec vous ; rien ne change pour eux.
 - Rallumer les notes ramène tout : vos notes, celles qu'on vous a partagées, vos épingles et les notifications déjà reçues.
+- Invité, listes coupées : plus de bouton « Listes » ni d'« À offrir », plus d'onglet « Listes » dans la « Corbeille », plus de catégorie « Envies » dans Réglages, « Notifications » ; sur ordinateur, ni « Listes », ni recherche des listes, ni « Nouvelle liste ». « Échéances » reste si un projet que vous voyez a l'option « Échéances » allumée. Vous ne recevez plus rien des listes, sauf l'avis qu'une liste vous est partagée (il ouvre Réglages, « Fonctions »).
+- Rien n'est allumé ? L'Accueil vous le dit, avec « Ouvrir Réglages › Fonctions ».
 
 <a id="notes"></a>
 
@@ -1361,7 +1365,7 @@ Réglages, « Administration » (visible seulement pour un Admin).
 **Onglet « Comptes »**
 
 - « Ajouter un compte » ([4.2 Créer les autres comptes](#creer-comptes)).
-- Les comptes : Admin et Utilisateurs d'abord, puis les invités sous « Invités », avec la pastille « Discret ». Sous le prénom : le rôle, puis ce qui est ouvert à un invité (par exemple « Projets ») ou retiré à un utilisateur (par exemple « sans projets »), sinon l'état de la double authentification.
+- Les comptes : Admin et Utilisateurs d'abord, puis les invités sous « Invités », avec la pastille « Discret ». Sous le prénom : le rôle, puis ce qui est ouvert à un invité (par exemple « Projets », ou « Listes, Projets ») ou retiré à un utilisateur (par exemple « sans projets »), sinon l'état de la double authentification.
 - Bouton ⋮ d'un compte : sa page, avec son « Rôle » et ses « Fonctions autorisées » ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)), et sa « Sécurité » : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s'il n'a jamais servi (un compte qui possède un projet, en est membre ou y a écrit a servi).
 - Rôle : « Utilisateur », « Invité » ou « Admin ». Il reste toujours au moins un Admin actif.
 
@@ -1631,6 +1635,8 @@ Connecté par un fournisseur d'identité ([4.10 Se connecter avec un fournisseur
 Si vous n'avez pas lancé vous-même la connexion, touchez « Refuser ».
 
 Pas de section « Assistants IA » dans « Mon compte » ? L'Admin ne l'a pas autorisée pour votre compte ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)) : l'écran « Autoriser un assistant IA » le dit aussi.
+
+Compte invité sans listes : l'écran ne propose pas « Certaines listes », et l'assistant ne voit que vos notes et vos projets (s'ils sont allumés) ; ses outils des listes répondent que les listes ne sont pas ouvertes pour votre compte.
 
 <a id="claude-connexions"></a>
 

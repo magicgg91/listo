@@ -614,7 +614,9 @@ On their account, a guest sees the “Guest” badge (Settings, “My account”
 
 On an account's page (Administration, “Accounts” tab, ⋮ button), under “Role”, the Admin ticks what the person can use. The tick allows; the person then turns the feature on in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)). Unticked, the feature disappears from their screens and Listo refuses it; nothing is erased, everything comes back if you tick it again.
 
-- “Notes” and “Projects”: for a user, ticked at first (lists are always there, without a tick); they turn them on themselves. For a guest, nothing is ticked at first; a ticked feature turns on for them right away, and they can turn it off later.
+- “Lists”: for a guest only, first (a user and an Admin always have lists, without a tick). Without it, the guest sees nothing of lists: no “Lists”, no “To give”, none of the lists shared with them (they stay for the other members), and “Due” only if a project they see has the “Due” option on ([7.7 A project's cards in “Due”](#projets-echeances)). No list can be shared with them: “Doesn't use lists” under their name.
+- “Notes” and “Projects”: for a user, ticked at first; they turn them on themselves. For a guest, nothing is ticked at first; a ticked feature (“Lists”, “Notes” or “Projects”) turns on for them right away, and they can turn it off later.
+- Unticking “Notes” also stops the public links of their notes, and unticking “Lists” those of their lists; the confirmation says so.
 - “Can create their own projects” (under “Projects”): without it, neither “New project” nor “Duplicate project”; projects shared with them stay usable.
 - “AI assistants”: without it, the person can't connect an AI assistant ([9.9 Connect an AI assistant](#claude-connecter)), and their connections are disconnected right away.
 - Note labels are shared by the household: a guest who has notes sees them.
@@ -623,7 +625,7 @@ On an account's page (Administration, “Accounts” tab, ⋮ button), under “
 **Changing an account's role**
 
 - Administration, “Accounts” tab, the account's ⋮ button: its page opens (on a computer, to the right of the list). Tap “User”, “Guest” or “Admin”.
-- From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and turned-on features don't change: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.
+- From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and turned-on features don't change, lists included: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.
 - From “Guest” to “User”: a confirmation says they'll be visible to the whole family again, and will see all the accounts.
 - A guest doesn't become an Admin directly, nor an Admin a guest: go through “User” first. Nobody changes their own role, and there's always at least one active Admin.
 
@@ -876,11 +878,13 @@ Settings, “Home” (the first row of “General”) sets up the Home screen fo
 
 **Choosing your features**
 
-Settings, “Features” (just below “Home”) chooses the features you use: notes (on at first) and projects (off at first: [7. Projects](#projets)). A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline. Only the features the Admin allowed for your account are offered ([4.3 Account roles: Admin, User, Guest](#roles-comptes)).
+Settings, “Features” (just below “Home”) chooses the features you use: notes (on at first) and projects (off at first: [7. Projects](#projets)). A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline. Only the features the Admin allowed for your account are offered ([4.3 Account roles: Admin, User, Guest](#roles-comptes)); a guest account also finds “Lists” there, when the Admin opened them to it.
 
 - Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more “Notes” tab in the “Trash” in Settings; on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.
 - With notes turned off, you get nothing from notes: no new updates, no notifications (Notifications page and phone). Other people can still share a note with you; nothing changes for them.
 - Turning notes back on brings everything back: your notes, the ones shared with you, your pins and the notifications already received.
+- Guest, lists turned off: no more “Lists” or “To give” button, no more “Lists” tab in the “Trash”, no more “Wishes” switch in Settings, “Notifications”; on a computer, no “Lists”, no list search, no “New list”. “Due” stays if a project you see has the “Due” option on. You get nothing more from lists, except the notice that a list was shared with you (it opens Settings, “Features”).
+- Nothing turned on? Home tells you, with “Open Settings › Features”.
 
 <a id="notes"></a>
 
@@ -1361,7 +1365,7 @@ Settings, “Administration” (visible only to an Admin).
 **“Accounts” tab**
 
 - “Add account” ([4.2 Creating the other accounts](#creer-comptes)).
-- The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status.
+- The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”, or “Lists, Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status.
 - An account's ⋮ button: its page, with its “Role” and its “Allowed features” ([4.3 Account roles: Admin, User, Guest](#roles-comptes)), and its “Security”: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used (an account that owns a project, is a member of one or wrote in one has been used).
 - Role: “User”, “Guest” or “Admin”. There's always at least one active Admin.
 
@@ -1631,6 +1635,8 @@ Signed in with an identity provider ([4.10 Signing in with an identity provider]
 If you didn't start the connection yourself, tap “Deny”.
 
 No “AI assistants” section in “My account”? The Admin hasn't allowed it for your account ([4.3 Account roles: Admin, User, Guest](#roles-comptes)): the “Authorize an AI assistant” screen says so too.
+
+Guest account without lists: the screen doesn't offer “Some lists”, and the assistant only sees your notes and your projects (if they are on); its list tools answer that lists aren't open for your account.
 
 <a id="claude-connexions"></a>
 

@@ -307,8 +307,10 @@ function myProjectsTile(open) {
 // le nombre de mes cartes de ce projet ; dessous, ses colonnes en pastilles
 // (point de couleur, nom, nombre de cartes ; simple repère, pas des
 // boutons) sur deux lignes au plus (fitChips : « +N » pour les autres),
-// puis mes deux cartes les plus urgentes de ce projet, ou « Aucune carte
-// pour vous ».
+// puis mes deux cartes les plus urgentes de ce projet. Aucune carte pour
+// moi : toutes les colonnes, sur autant de lignes qu'il faut (la place des
+// cartes leur sert ; choix du propriétaire du 25 novembre 2026), puis
+// « Aucune carte pour vous ».
 function oneProjectTile(project) {
   const open = () => navigate('project', { id: project.id });
   const { count, urgent } = projectTileCards(app.data, app.user.id, project.id, todayKey(), nowTime());
@@ -321,7 +323,9 @@ function oneProjectTile(project) {
     cols.length ? h('ul', { class: 'tile__cols', 'aria-label': t('projets.carte.colonnes') },
       cols.map(({ column, count: cards }) => h('li', { class: `colchip c-${column.color}` },
         h('span', { class: 'coldot', 'aria-hidden': 'true' }), column.name, ' ', h('b', {}, String(cards)))),
-      h('li', { class: 'colchip colchip--more', hidden: true })) : null,
+      // Pastille « +N » seulement quand mes cartes suivent (sinon fitChips
+      // ne cache rien : toutes les colonnes restent visibles)
+      urgent.length ? h('li', { class: 'colchip colchip--more', hidden: true }) : null) : null,
     urgent.length
       ? rowsOf(urgent.map((card) => cardRow(card, project, { withProject: false })))
       : emptyText(t('accueil.projets.aucuneCarte')),

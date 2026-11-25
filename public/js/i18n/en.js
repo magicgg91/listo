@@ -39,6 +39,7 @@ import ops from './en/ops.js';
 import partage from './en/partage.js';
 import photo from './en/photo.js';
 import photos from './en/photos.js';
+import projets from './en/projets.js';
 import push from './en/push.js';
 import raccourcis from './en/raccourcis.js';
 import recherche from './en/recherche.js';
@@ -51,6 +52,6 @@ import reseau from './en/reseau.js';
 import scan from './en/scan.js';
 import version from './en/version.js';
 
-export const PARTS = { accueil, administration, aide, ajout, alertes, annulation, application, autorisation, claude, compte, comptes, connexion, corbeille, demarrage, donnees, echeances, fenetres, format, formulaire, icones, inbox, lienpublic, liens, liste, listes, menu, mots, navigation, notes, notifications, offrir, ops, partage, photo, photos, push, raccourcis, recherche, reference, references, reglages, regles, repetition, reseau, scan, version };
+export const PARTS = { accueil, administration, aide, ajout, alertes, annulation, application, autorisation, claude, compte, comptes, connexion, corbeille, demarrage, donnees, echeances, fenetres, format, formulaire, icones, inbox, lienpublic, liens, liste, listes, menu, mots, navigation, notes, notifications, offrir, ops, partage, photo, photos, projets, push, raccourcis, recherche, reference, references, reglages, regles, repetition, reseau, scan, version };
 
 export default Object.assign({}, ...Object.values(PARTS));

@@ -10,7 +10,8 @@
 // photo) : le téléphone demande ensuite lui-même les changements par
 // /api/sync, avec tous les contrôles d'accès habituels. Pour les notes
 // (server/notes.js) : « event: note », sans données non plus, aux seuls
-// appareils des comptes concernés ; pour la page Notifications
+// appareils des comptes concernés ; pour les projets (server/projects.js) :
+// « event: project », de même ; pour la page Notifications
 // (server/inbox.js) : « event: inbox », sans données, aux seuls appareils
 // de la personne. Après un changement
 // de catégorie, de magasin ou de rayon par l'Admin, tous les téléphones
@@ -111,6 +112,17 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     }
   }
 
+  // Prévient les comptes donnés que leurs projets ont changé (un projet,
+  // ses colonnes, ses cartes, son partage : server/projects.js) :
+  // « event: project », sans aucune donnée ; le téléphone fait une
+  // synchronisation (droits vérifiés par /api/sync)
+  function notifyProjects(userIds) {
+    const message = 'event: project\ndata: {}\n\n';
+    for (const userId of new Set(userIds)) {
+      for (const connection of byUser.get(userId) ?? []) write(connection, message);
+    }
+  }
+
   // Prévient les comptes donnés que leur page Notifications a changé (une
   // ligne ajoutée, regroupée, lue ou effacée : server/inbox.js) :
   // « event: inbox », sans aucune donnée ; le téléphone relit sa page
@@ -161,7 +173,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     for (const list of [...byUser.values()]) for (const connection of [...list]) close(connection);
   }
 
-  return { connect, notifyList, notifyUsers, notifyNotes, notifyInbox, notifyReferences, disconnectUser, disconnectSession, count, closeAll };
+  return { connect, notifyList, notifyUsers, notifyNotes, notifyProjects, notifyInbox, notifyReferences, disconnectUser, disconnectSession, count, closeAll };
 }
 
 // Refuse un flux demandé depuis un autre site. Un navigateur n'envoie pas

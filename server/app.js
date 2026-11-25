@@ -25,10 +25,12 @@ import { reservationRoutes } from './routes/reservations.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
 import { createEventHub, sameSiteOnly } from './events.js';
 import { createSaveCounter } from './notes.js';
+import { PROJECT_CREATIONS_PER_HOUR } from '../public/js/projects.js';
 import { createShareService, createPublicAccess } from './shares.js';
 import { shareRoutes } from './routes/shares.js';
 import { createNoteShareService } from './note-shares.js';
 import { noteRoutes } from './routes/notes.js';
+import { projectRoutes } from './routes/projects.js';
 import { labelRoutes } from './routes/labels.js';
 import { publicRoutes } from './routes/public.js';
 import { createBackups } from './backup.js';
@@ -167,6 +169,9 @@ export function createApp({
     // Enregistrements de notes : 3 600 par heure et par compte au plus
     // (le téléphone en envoie au plus un par seconde ; voir server/notes.js)
     noteSaves: createSaveCounter({ now }),
+    // Créations et duplications de projets : 20 par heure et par compte au
+    // plus (server/projects.js, compté par la route POST /api/ops)
+    projectCreations: createSaveCounter({ limit: PROJECT_CREATIONS_PER_HOUR, now }),
   };
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
@@ -305,6 +310,7 @@ export function createApp({
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
   api.use(noteRoutes(ctx));    // partage et lien public d'une note (après listRoutes : utilise ctx.notes)
   api.use(labelRoutes(ctx));   // nouvelle étiquette de note (après listRoutes : utilise ctx.labels)
+  api.use(projectRoutes(ctx)); // partage, départ, effacements définitifs des projets (après listRoutes : utilise ctx.projects)
   // Page Notifications (GET /api/inbox…) et réglages des notifications
   // (catégories, sourdines par liste et par note) : toujours, car ils
   // valent pour la page comme pour le téléphone
@@ -389,7 +395,9 @@ export function createApp({
     purgeExpiredSessions(ctx);
     ctx.lists.purgeDeleted();
     ctx.notes.purgeDeleted();     // notes dans la corbeille depuis plus de 30 jours
+    ctx.projects.purgeDeleted();  // projets et cartes dans une corbeille depuis plus de 30 jours
     ctx.noteSaves.prune();
+    ctx.projectCreations.prune();
     ctx.lists.news.purgeOld();   // nouveautés : journal de plus de 30 jours, 500 événements par liste
     ctx.limiter.prune();
     ctx.uploads.prune();

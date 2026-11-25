@@ -21,8 +21,8 @@
 //                                    &listId=… : vide hors liste de courses
 //   GET  /api/sync?since=…          tout ce qui a changé depuis un instant
 //   POST /api/ops                   lot d'opérations (créer, modifier, cocher,
-//                                   supprimer une liste ou un article ; notes
-//                                   et leurs catégories, server/notes.js)
+//                                   supprimer une liste ou un article ; notes,
+//                                   server/notes.js ; projets, server/projects.js)
 //
 // Les droits sont vérifiés dans lists.js, pour chaque liste et chaque
 // article, à chaque requête.
@@ -31,6 +31,7 @@ import express from 'express';
 import { createListService, MAX_OPS_PER_BATCH, OpError } from '../lists.js';
 import { requestLocale } from '../locale.js';
 import { NOTE_SAVES } from '../notes.js';
+import { PROJECT_CREATIONS } from '../projects.js';
 
 // Résultat d'une opération pour le téléphone : un refus (code : nom de son
 // texte) est dit dans la langue de la requête ; ses valeurs (params) restent
@@ -170,6 +171,12 @@ export function listRoutes(ctx) {
     const saves = ops.filter((op) => NOTE_SAVES.includes(op?.type)).length;
     if (saves && !ctx.noteSaves.take(req.user.id, saves)) {
       return res.status(429).json({ error: req.t('ops.notesTropVite') });
+    }
+    // Plafond des créations et duplications de projets (20 par heure) : de
+    // même, tout le lot est refusé et reste en file
+    const creations = ops.filter((op) => PROJECT_CREATIONS.includes(op?.type)).length;
+    if (creations && !ctx.projectCreations.take(req.user.id, creations)) {
+      return res.status(429).json({ error: req.t('ops.projetsTropVite') });
     }
     res.json({ results: service.applyOps(req.user, ops).map((result) => localized(req, result)) });
   });

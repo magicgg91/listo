@@ -36,7 +36,9 @@ import { createProjectService } from './projects.js';
 import { createInbox, inboxHandlers } from './inbox.js';
 import { createHome } from './home.js';
 import { createFeatures } from './features.js';
-import { translate, compareText } from '../public/js/i18n.js';
+import { createDirectory } from './directory.js';
+import { accountRole, mayShareOwn } from '../public/js/access.js';
+import { translate } from '../public/js/i18n.js';
 import crypto from 'node:crypto';
 import {
   normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse, hideHabitual,
@@ -325,12 +327,24 @@ export function createListService(ctx) {
   const home = createHome(db);
   // Réglage « Fonctions » de chaque compte (server/features.js, migration 41)
   const features = createFeatures(db);
+  // Annuaire de chaque compte (server/directory.js) : qui il peut choisir
+  // pour partager ou comme destinataire d'une liste d'envies
+  const directory = ctx.directory ?? (ctx.directory = createDirectory(db));
   const nowIso = () => new Date(ctx.now()).toISOString();
+
+  // Destinataire d'une liste d'envies, un AUTRE compte (création, y compris
+  // par la file d'attente hors ligne, et conversion) : un compte de mon
+  // annuaire, jamais un invité (docs/cadrage-comptes.md, 5.6). Un compte
+  // que je ne vois pas reçoit exactement la réponse d'un compte inconnu ;
+  // l'Admin, qui voit les invités, reçoit un refus nommé.
+  function checkBeneficiary(user, id) {
+    if (!directory.canSee(user, id)) throw new OpError(400, 'ops.utilisateurInconnu');
+    if (directory.roleOf(id) === 'guest') throw new OpError(400, 'ops.inviteDestinataire');
+  }
 
   const q = {
     store: db.prepare('SELECT * FROM stores WHERE id = ?'),
     userName: db.prepare('SELECT display_name FROM users WHERE id = ?').pluck(),
-    activeUser: db.prepare('SELECT id FROM users WHERE id = ? AND active = 1').pluck(),
     aisle: db.prepare('SELECT * FROM aisles WHERE id = ?'),
     allStores: db.prepare('SELECT * FROM stores'),
     allAisles: db.prepare('SELECT * FROM aisles'),
@@ -380,7 +394,7 @@ export function createListService(ctx) {
       WHERE list_id = :listId AND (assigned_to = :userId OR instr(',' || COALESCE(assign_people, '') || ',', ',' || CAST(:userId AS INTEGER) || ',') > 0)`),
     setAssignment: db.prepare('UPDATE items SET assign_mode = ?, assign_people = ?, assigned_to = ?, updated_at = ? WHERE id = ?'),
     members: db.prepare(`
-      SELECT users.id, users.username, users.display_name, users.active, list_members.access
+      SELECT users.id, users.display_name, users.active, list_members.access
       FROM list_members JOIN users ON users.id = list_members.user_id
       WHERE list_members.list_id = ?
     `),
@@ -823,9 +837,10 @@ export function createListService(ctx) {
     const store = storeRow && { id: storeRow.id, name: storeRow.name, active: storeRow.active === 1, isMulti: storeRow.is_multi === 1 };
     const rows = q.members.all(list.id);
     // access : le droit de chaque personne (le propriétaire : toujours
-    // « modification ») ; canEdit : le droit du compte connecté
+    // « modification ») ; canEdit : le droit du compte connecté. Jamais
+    // l'identifiant de connexion (username) : le prénom suffit à l'écran
     const members = rows.map((m) => ({
-      id: m.id, username: m.username, displayName: m.display_name, active: m.active === 1, isOwner: m.id === list.owner_id,
+      id: m.id, displayName: m.display_name, active: m.active === 1, isOwner: m.id === list.owner_id,
       access: m.id === list.owner_id ? 'modification' : m.access,
     }));
     const mine = rows.find((m) => m.id === user.id);
@@ -948,8 +963,9 @@ export function createListService(ctx) {
       if (op.forUserId !== undefined && op.forUserId !== null) {
         if (!isWishList(type)) throw new OpError(400, 'ops.pourQuiPasIci');
         forUserId = parseId(op.forUserId);
-        if (!forUserId || !q.activeUser.get(forUserId)) throw new OpError(400, 'ops.utilisateurInconnu');
+        if (!forUserId) throw new OpError(400, 'ops.utilisateurInconnu');
         if (forUserId === user.id) forUserId = null; // « Moi »
+        else checkBeneficiary(user, forUserId);
       }
       if (op.forName !== undefined && op.forName !== null) {
         if (!isWishList(type)) throw new OpError(400, 'ops.pourQuiPasIci');
@@ -1632,9 +1648,9 @@ export function createListService(ctx) {
       aisles: q.allAisles.all().map(describeAisle),
       // (lignes utilisées, ou retirées de « Souvent ajoutés », depuis la dernière synchronisation)
       history: db.prepare('SELECT * FROM item_history WHERE last_used_at >= ? OR hidden_at >= ?').all(from, from).map(describeHistory),
-      // Comptes actifs (choix des personnes avec qui partager), gardés sur le téléphone pour
-      // ouvrir le formulaire de liste sans réseau
-      users: activeUsers(),
+      // Mon annuaire (choix des personnes avec qui partager ; server/directory.js),
+      // gardé sur le téléphone pour ouvrir le formulaire de liste sans réseau
+      users: directory.directoryFor(user),
       // Mes nouveautés, en entier à chaque synchronisation (server/news.js)
       news: news.newsFor(user),
       // Mon réglage « Accueil » (server/home.js), en entier à chaque synchronisation
@@ -1671,6 +1687,8 @@ export function createListService(ctx) {
   // recevoir de droit (il les a tous).
   function setMembers(user, listId, userIds, access = {}) {
     const list = listForOwner(user, listId);
+    // Un invité ne partage jamais ce qu'il possède (l'Admin partage avec lui)
+    if (!mayShareOwn(accountRole(user))) throw new OpError(403, 'ops.invitePartageInterdit');
     if (!Array.isArray(userIds) || userIds.length > 50 || !userIds.every((id) => parseId(id))) {
       throw new OpError(400, 'ops.listePersonnesInvalide');
     }
@@ -1698,10 +1716,13 @@ export function createListService(ctx) {
       if (wanted.has(beneficiary)) rights.set(beneficiary, 'modification');
     }
 
+    // Une personne ajoutée doit être dans MON annuaire (compte actif, et pas
+    // un invité pour la famille) : sinon, exactement la réponse d'un compte
+    // qui n'existe pas (les numéros de compte se suivent). Un membre déjà
+    // présent peut rester (et changer de droit, ou être retiré).
     for (const id of wanted) {
       if (current.has(id)) continue;
-      const guest = db.prepare('SELECT id, active FROM users WHERE id = ?').get(id);
-      if (!guest || guest.active !== 1) throw new OpError(400, 'ops.utilisateurInconnu');
+      if (!directory.canSee(user, id)) throw new OpError(400, 'ops.utilisateurInconnu');
     }
 
     const added = [...wanted].filter((id) => !current.has(id));
@@ -1763,8 +1784,9 @@ export function createListService(ctx) {
     let forName = null;
     if (body.forUserId !== undefined && body.forUserId !== null) {
       forUserId = parseId(body.forUserId);
-      if (!forUserId || !q.activeUser.get(forUserId)) throw new OpError(400, 'ops.utilisateurInconnu');
+      if (!forUserId) throw new OpError(400, 'ops.utilisateurInconnu');
       if (forUserId === user.id) throw new OpError(400, 'ops.pourSoiChoisirMoi');
+      checkBeneficiary(user, forUserId);
     }
     if (body.forName !== undefined && body.forName !== null) {
       if (forUserId) throw new OpError(400, 'ops.compteOuPersonne');
@@ -1963,14 +1985,9 @@ export function createListService(ctx) {
     return describeItem(item);
   }
 
-  // Comptes actifs, pour choisir avec qui partager une liste. Ordre de
-  // départ, toujours le même (synchronisation) : chaque écran les range
-  // ensuite dans sa langue (compareNames).
-  function activeUsers() {
-    return db.prepare('SELECT id, username, display_name FROM users WHERE active = 1').all()
-      .map((u) => ({ id: u.id, username: u.username, displayName: u.display_name }))
-      .sort((a, b) => compareText(a.displayName, b.displayName, { locale: 'fr' }));
-  }
+  // Annuaire du compte (GET /api/users), le même que dans la
+  // synchronisation : server/directory.js
+  const directoryFor = (user) => directory.directoryFor(user);
 
   // --- Corbeille des listes (GET /api/lists/deleted, POST /api/lists/:id/restore) ---
   // Une liste supprimée (list.delete : suppression logique, deleted_at) reste
@@ -2079,7 +2096,7 @@ export function createListService(ctx) {
   }
 
   return {
-    applyOps, myLists, readList, suggestions, changesSince, setMembers, convertToWishes, duplicateList, leaveList, purgeDeleted, activeUsers, news,
+    applyOps, myLists, readList, suggestions, changesSince, setMembers, convertToWishes, duplicateList, leaveList, purgeDeleted, directoryFor, news,
     deletedLists, restoreList, purgeList, purgeTrash, activeAisles, activeStoreChoices,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct, notes,
   };

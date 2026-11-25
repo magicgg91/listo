@@ -92,6 +92,11 @@ export default {
   'ops.magasinCoursesSeulement': 'Un magasin ne se choisit que pour une liste de courses.',
   'ops.pourQuiPasIci': '« Pour qui ? » ne se choisit que pour une liste d\'envies.',
   'ops.utilisateurInconnu': 'Utilisateur inconnu ou désactivé.',
+  // Comptes invités (docs/cadrage-comptes.md) : un invité ne partage jamais
+  // ce qu'il possède ; il n'est jamais destinataire d'une liste d'envies
+  // (refus nommé pour l'Admin, seul à voir les invités)
+  'ops.invitePartageInterdit': 'Un compte invité ne peut pas partager : l\'Admin s\'en charge.',
+  'ops.inviteDestinataire': 'Un invité ne peut pas recevoir une liste d\'envies.',
   'ops.compteOuPersonne': 'Choisissez un compte ou une personne sans compte, pas les deux.',
   'ops.destinataireFixe': 'La personne à qui la liste est destinée ne change pas.',
   'ops.rienAModifier': 'Rien à modifier.',

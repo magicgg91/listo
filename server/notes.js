@@ -46,6 +46,8 @@
 import { NOTE_TITLE_MAX, NOTE_BODY_MAX, NOTES_MAX, NOTE_TRASH_DAYS } from '../public/js/notes.js';
 import { cleanLabelIds, LABELS_PER_NOTE_MAX } from '../public/js/labels.js';
 import { createLabelService, LABEL_NOT_FOUND } from './labels.js';
+import { createDirectory } from './directory.js';
+import { accountRole, mayShareOwn } from '../public/js/access.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -118,6 +120,8 @@ export function noteAccess(user, note) {
 
 export function createNoteService(ctx, { OpError }) {
   const { db } = ctx;
+  // Annuaire de chaque compte (server/directory.js) : contrôle des partages
+  const directory = ctx.directory ?? (ctx.directory = createDirectory(db));
   const nowIso = () => new Date(ctx.now()).toISOString();
   // Réserve des étiquettes (server/labels.js), créée une fois
   const labels = ctx.labels ?? (ctx.labels = createLabelService(ctx, { OpError }));
@@ -444,6 +448,8 @@ export function createNoteService(ctx, { OpError }) {
   function setMembers(user, noteId, userIds, access = {}) {
     const note = ownNote(user, noteId);
     if (note.deleted_at) throw new OpError(404, NOTE_NOT_FOUND);
+    // Un invité ne partage jamais ce qu'il possède (l'Admin partage avec lui)
+    if (!mayShareOwn(accountRole(user))) throw new OpError(403, 'ops.invitePartageInterdit');
     if (!Array.isArray(userIds) || userIds.length > NOTE_MEMBERS_MAX || !userIds.every((id) => Number.isSafeInteger(Number(id)) && Number(id) > 0 && String(Number(id)) === String(id))) {
       throw new OpError(400, 'ops.listePersonnesInvalide');
     }
@@ -461,8 +467,9 @@ export function createNoteService(ctx, { OpError }) {
     const before = new Map(q.members.all(note.id).map((m) => [m.id, m.access]));
     for (const id of wanted) {
       if (before.has(id)) continue;
-      const guest = q.user.get(id);
-      if (!guest || guest.active !== 1) throw new OpError(400, 'ops.utilisateurInconnu');
+      // Une personne ajoutée doit être dans MON annuaire (server/directory.js) :
+      // sinon, exactement la réponse d'un compte qui n'existe pas
+      if (!directory.canSee(user, id)) throw new OpError(400, 'ops.utilisateurInconnu');
     }
     const added = [...wanted].filter((id) => !before.has(id));
     const removed = [...before.keys()].filter((id) => !wanted.has(id));

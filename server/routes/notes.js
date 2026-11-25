@@ -10,6 +10,9 @@
 //                                  liste, server/routes/shares.js)
 //   DELETE /api/notes/:id/share     arrêter le lien
 //
+// Un invité (docs/cadrage-comptes.md) ne crée ni ne change jamais de lien
+// public (403) ; il peut arrêter un ancien lien.
+//
 // Les droits sont vérifiés par server/notes.js (noteAccess) à chaque
 // requête. Lien public : seul le propriétaire y a accès ; un membre, un
 // autre compte ou l'Admin reçoivent la même réponse qu'une note inconnue
@@ -20,6 +23,7 @@ import express from 'express';
 import { OpError } from '../lists.js';
 import { checkDuration, DEFAULT_DURATION_HOURS } from '../shares.js';
 import { NOTE_NOT_FOUND } from '../notes.js';
+import { accountRole, mayShareOwn } from '../../public/js/access.js';
 
 export function noteRoutes(ctx) {
   const router = express.Router();
@@ -69,6 +73,8 @@ export function noteRoutes(ctx) {
   });
 
   router.put('/notes/:id/share', ownNote, async (req, res) => {
+    // Un invité ne partage jamais ce qu'il possède : pas de lien public
+    if (!mayShareOwn(accountRole(req.user))) return res.status(403).json({ error: req.t('ops.invitePartageInterdit') });
     const body = req.body ?? {};
     const durationHours = body.durationHours === undefined ? undefined : checkDuration(body.durationHours);
     if (body.durationHours !== undefined && durationHours === undefined) return res.status(400).json({ error: req.t('liens.dureeInvalide') });

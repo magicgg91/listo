@@ -24,6 +24,7 @@ import { photoRoutes } from './routes/photos.js';
 import { reservationRoutes } from './routes/reservations.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
 import { createEventHub, sameSiteOnly } from './events.js';
+import { createDirectory } from './directory.js';
 import { createSaveCounter } from './notes.js';
 import { PROJECT_CREATIONS_PER_HOUR, COMMENTS_PER_HOUR } from '../public/js/projects.js';
 import { createShareService, createPublicAccess } from './shares.js';
@@ -179,6 +180,9 @@ export function createApp({
     // (server/projects.js, compté par la route POST /api/ops)
     commentWrites: createSaveCounter({ limit: COMMENTS_PER_HOUR, now }),
   };
+  // Annuaire de chaque compte (server/directory.js) : qui il peut choisir
+  // pour partager ; un invité n'y apparaît que pour les Admin
+  ctx.directory = createDirectory(db);
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
   // Liens publics (étape 10) et cookies de consultation des visiteurs

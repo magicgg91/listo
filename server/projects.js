@@ -78,6 +78,8 @@ import { setTaskAt } from '../public/js/note-format.js';
 import { reminderAt } from '../public/js/due-time.js';
 import { translate } from '../public/js/i18n.js';
 import { userLocale } from './locale.js';
+import { createDirectory } from './directory.js';
+import { accountRole, mayShareOwn } from '../public/js/access.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -139,6 +141,8 @@ export function projectAccess(user, project) {
 
 export function createProjectService(ctx, { OpError }) {
   const { db } = ctx;
+  // Annuaire de chaque compte (server/directory.js) : contrôle des partages
+  const directory = ctx.directory ?? (ctx.directory = createDirectory(db));
   const nowIso = () => new Date(ctx.now()).toISOString();
   const purgeLimit = () => new Date(ctx.now() - PROJECT_TRASH_DAYS * DAY).toISOString();
   const newId = () => crypto.randomUUID();
@@ -1455,6 +1459,8 @@ export function createProjectService(ctx, { OpError }) {
   function setMembers(user, projectId, userIds, access = {}) {
     const { project, role } = projectFor(user, projectId);
     if (role !== 'owner') throw deny(role, true);
+    // Un invité ne partage jamais ce qu'il possède (l'Admin partage avec lui)
+    if (!mayShareOwn(accountRole(user))) throw new OpError(403, 'ops.invitePartageInterdit');
     if (!Array.isArray(userIds) || userIds.length > PROJECT_MEMBERS_MAX || !userIds.every((id) => Number.isSafeInteger(Number(id)) && Number(id) > 0 && String(Number(id)) === String(id))) {
       throw new OpError(400, 'ops.listePersonnesInvalide');
     }
@@ -1472,8 +1478,9 @@ export function createProjectService(ctx, { OpError }) {
     const before = new Map(q.members.all(project.id).map((m) => [m.id, m.access]));
     for (const id of wanted) {
       if (before.has(id)) continue;
-      const guest = q.user.get(id);
-      if (!guest || guest.active !== 1) throw new OpError(400, 'ops.utilisateurInconnu');
+      // Une personne ajoutée doit être dans MON annuaire (server/directory.js) :
+      // sinon, exactement la réponse d'un compte qui n'existe pas
+      if (!directory.canSee(user, id)) throw new OpError(400, 'ops.utilisateurInconnu');
     }
     const added = [...wanted].filter((id) => !before.has(id));
     const removed = [...before.keys()].filter((id) => !wanted.has(id));

@@ -92,6 +92,11 @@ export default {
   'ops.magasinCoursesSeulement': 'A store can only be chosen for a shopping list.',
   'ops.pourQuiPasIci': '“Who is it for?” can only be set for a wish list.',
   'ops.utilisateurInconnu': 'Unknown or disabled user.',
+  // Comptes invités (docs/cadrage-comptes.md) : un invité ne partage jamais
+  // ce qu'il possède ; il n'est jamais destinataire d'une liste d'envies
+  // (refus nommé pour l'Admin, seul à voir les invités)
+  'ops.invitePartageInterdit': 'A guest account can\'t share: the Admin takes care of it.',
+  'ops.inviteDestinataire': 'A guest can\'t receive a wish list.',
   'ops.compteOuPersonne': 'Choose an account or a person without an account, not both.',
   'ops.destinataireFixe': "The person the list is for can't be changed.",
   'ops.rienAModifier': 'Nothing to change.',

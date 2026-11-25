@@ -138,7 +138,7 @@ export function listRoutes(ctx) {
   });
 
   router.get('/users', (req, res) => {
-    res.json({ users: service.activeUsers() });
+    res.json({ users: service.directoryFor(req.user) });
   });
 
   router.get('/suggestions', (req, res) => {

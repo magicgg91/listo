@@ -7,8 +7,12 @@
 // cochée (la place reste réservée).
 //
 // Moi d'abord (propriétaire : cochée, verrouillée), puis les autres comptes
-// actifs ; une personne déjà présente mais désactivée reste affichée (et
-// peut être retirée). Une personne ajoutée commence en « Lecture seule »
+// de mon annuaire (server/directory.js) ; une personne déjà présente mais
+// désactivée reste affichée (et peut être retirée). Une personne déjà
+// présente que mon annuaire ne montre pas (un invité, pour la famille :
+// docs/cadrage-comptes.md, 5.3) reste affichée comme les autres, sans
+// mention. L'Admin voit aussi les invités, avec « Invité · discret » sous
+// leur prénom (l'œil barré ET les mots). Une personne ajoutée commence en « Lecture seule »
 // (« Lire ») ; une personne déjà présente garde son droit. Le destinataire
 // d'une liste d'envies, s'il est membre, est coché et verrouillé
 // (« Destinataire · Peut modifier ») : jamais retiré, toujours « Peut
@@ -80,7 +84,7 @@ export function peoplePicker({ me, users, members, beneficiaryId = null, note = 
   const rights = new Map(current.map((m) => [m.id, m.access ?? 'modification']));
   const people = (users ?? []).filter((u) => u.id !== me.id).map((u) => ({ ...u, active: true }));
   for (const member of current) {
-    if (!people.some((p) => p.id === member.id)) people.push({ ...member, active: false });
+    if (!people.some((p) => p.id === member.id)) people.push({ ...member, active: member.active === true });
   }
   people.sort((a, b) => compareNames(a.displayName, b.displayName));
   // Destinataire membre : verrouillé (coché, sans choix)
@@ -100,11 +104,14 @@ export function peoplePicker({ me, users, members, beneficiaryId = null, note = 
     if (beneficiary && lockedBeneficiary) return lockedRow(person, person.displayName, t('partage.personnes.destinataire'));
     const box = h('span', { class: 'tick' });
     const sub = !person.active ? t('partage.personnes.desactive') : beneficiary ? t('partage.personnes.destinataire') : null;
+    // Un invité, dans l'annuaire de l'Admin seulement (rôle envoyé à lui seul)
+    const discreet = person.role === 'guest' && person.active
+      ? h('span', { class: 'discreet-tag' }, icon('eye-off'), t('partage.personnes.invite')) : null;
     const tick = h('button', { class: 'tick-row', type: 'button', role: 'checkbox' },
       box,
       avatar(person.displayName, { second: true }),
       h('span', { class: 'grow share__name' }, h('span', { class: 'row__title' }, person.displayName),
-        sub ? h('span', { class: 'row__sub' }, sub) : null));
+        sub ? h('span', { class: 'row__sub' }, sub) : discreet));
     // Le destinataire qui a quitté la liste : pas de choix (« Peut modifier »)
     const access = beneficiary ? null : accessChoice(rightLabel(person.displayName), rights.get(person.id) ?? 'lecture', (value) => rights.set(person.id, value), { three: project });
     // Mise à jour sur place (la case garde le focus) ; personne non cochée :

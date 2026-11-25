@@ -1873,3 +1873,60 @@ span.nf-task__box::after { display: none; }
 .kcompose__form { display: flex; flex: 1; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 0; }
 .kcompose__input { width: 100%; min-height: 44px; resize: vertical; }
 .tile__head .tile__dot { margin-left: -4px; }
+
+/* 16.48 Mention « Discret » (docs/cadrage-comptes.md, section 5 ; décision
+   du propriétaire du 25 novembre 2026 : un compte au rôle « Invité » est
+   toujours discret) : marquée par l'œil barré (#i-eye-off) ET le mot,
+   jamais l'icône seule. Montrée à l'Admin seulement (la famille ne voit
+   pas ces comptes).
+   - .chip--discreet : pastille au bout d'une ligne (Administration ›
+     Comptes, en-tête de la page d'un compte) ; contour, sans fond ;
+   - .discreet-tag : la même mention dans une ligne de texte (sous le
+     prénom dans la feuille « Partager » de l'Admin : « Invité · discret »). */
+.chip--discreet { gap: 4px; background: transparent; border: 1px solid var(--color-border); color: var(--color-text-2); }
+.chip--discreet .icon { width: 16px; height: 16px; }
+.discreet-tag { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
+.discreet-tag .icon { width: 14px; height: 14px; }
+
+/* 16.49 Page d'un compte (#/administration/comptes/<id>, Admin seulement ;
+   maquettes design/comptes admin-compte-1 et 2) :
+   - .acct-card : en tête, pastille, nom, « identifiant · 2FA … » ;
+   - choix du rôle (« Utilisateur | Invité | Admin ») : .segmented du kit,
+     dans .acct-field, la phrase du rôle dessous (.field__hint) ; un choix
+     impossible (« Admin » pour un invité, « Invité » pour un Admin : on
+     passe d'abord par « Utilisateur ») est désactivé, pâli ET expliqué
+     par la phrase ;
+   - .acct-sees : encadré d'une phrase (« Compte invité » dans les Réglages
+     de l'invité), sans aucune donnée (ni nom de projet, ni nom de
+     personne). */
+.acct-card { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-1) var(--space-2) 0; padding: var(--space-2); }
+.acct-card .grow { display: flex; flex-direction: column; min-width: 0; }
+.acct-card .row__title { font-size: var(--text-lg); }
+.segmented__opt:disabled { opacity: 0.45; cursor: not-allowed; }
+.acct-sees { margin: var(--space-2) var(--space-2) 0; padding: 12px var(--space-2); border-radius: var(--radius-sm); background: var(--color-neutral-soft); }
+.acct-sees__title { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font-size: var(--text-sm); font-weight: 700; }
+.acct-sees__title .icon { width: 18px; height: 18px; color: var(--color-text-2); }
+.acct-sees__text { margin: 0; color: var(--color-text-2); line-height: var(--lh-base); }
+/* Ordinateur : dans les Réglages, aligné sur les blocs */
+.pc-settings .acct-sees { margin: 0; }
+.acct-field { margin: var(--space-1) var(--space-2) 0; }
+.acct-field .field__hint { margin-top: 2px; }
+
+/* 16.50 Administration sur ordinateur (.app--pc ; maquette
+   pc-admin-comptes-1) : dans la colonne de 1 040 px, la liste des comptes
+   à gauche (.acct-split__list, 360 px), la page du compte choisi à droite
+   (.acct-split__page, sur deux colonnes : rôle ; sécurité) ; le compte
+   choisi a le fond doux ET une barre à gauche (aria-current, jamais la
+   couleur seule). */
+.acct-split { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: var(--space-3); align-items: start; padding: var(--space-2) var(--pc-gutter) var(--pc-gutter); }
+.acct-split .group { margin: 0; }
+.acct-split .section-title { padding-left: 4px; }
+.acct-split .section-title:first-child { margin-top: 0; }
+.acct-split__list .row[aria-current="true"] { position: relative; background: var(--color-accent-soft); }
+.acct-split__list .row[aria-current="true"]::before { content: ""; position: absolute; top: 8px; bottom: 8px; left: 0; width: 4px; border-radius: 0 4px 4px 0; background: var(--color-accent); }
+.acct-split__list .btn { margin-top: var(--space-2); }
+.acct-split__page .acct-card, .acct-split__page .acct-sees, .acct-split__page .acct-field { margin-left: 0; margin-right: 0; }
+.acct-split__page .acct-card { margin-top: 0; }
+.acct-split__page .group { margin: 0; }
+.acct-split__page .group-after, .acct-split__page .page-intro { margin-left: 0; margin-right: 0; }
+.acct-split__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: start; }

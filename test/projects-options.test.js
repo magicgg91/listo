@@ -97,9 +97,9 @@ async function household(t) {
 // --- Migration 46 ---
 
 test('migration 46 : projects.deadlines_enabled, allumée au départ (projets existants compris), 0 ou 1 seulement ; une base 45 migre sans rien changer', (t) => {
-  assert.equal(MIGRATIONS.length, 46);
+  assert.equal(MIGRATIONS.length, 47);
   const fresh = openDatabase(':memory:');
-  assert.equal(schemaVersion(fresh), 46);
+  assert.equal(schemaVersion(fresh), 47);
   const column = fresh.prepare('PRAGMA table_info(projects)').all().find((c) => c.name === 'deadlines_enabled');
   assert.deepEqual([column.notnull, column.dflt_value], [1, '1']);
   const file = path.join(tempDir(t), 'old.db');
@@ -110,7 +110,7 @@ test('migration 46 : projects.deadlines_enabled, allumée au départ (projets ex
   old.prepare("INSERT INTO cards (id, project_id, column_id, position, title, created_by, created_at, updated_at, due_date, due_done) VALUES ('k', 'p', 'c', 1, 'T', 1, 'x', 'x', '2026-11-28', 1)").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 46);
+  assert.equal(schemaVersion(db), 47);
   assert.deepEqual({ ...db.prepare('SELECT name, priority_enabled, deadlines_enabled FROM projects').get() }, { name: 'P', priority_enabled: 1, deadlines_enabled: 1 }, 'un projet d\'avant : option allumée, le reste inchangé');
   assert.deepEqual({ ...db.prepare('SELECT due_date, due_done FROM cards').get() }, { due_date: '2026-11-28', due_done: 1 });
   for (const bad of [2, -1, null]) assert.throws(() => db.prepare('UPDATE projects SET deadlines_enabled = ?').run(bad), /constraint/i, String(bad));
@@ -331,7 +331,7 @@ test('menus ⋮ d\'un projet : les mêmes entrées, dans le même ordre, sur l\'
   assert.deepEqual(projectMenuEntries({ id: 'p', role: null, members }), [], 'non-membre : rien');
   // L'écran s'en sert pour les deux menus (une seule liste)
   const screen = read('public/js/screens/projects.js');
-  assert.match(screen, /return projectMenuEntries\(project, \{ inside \}\)\.map\(\(entry\) => items\[entry\]\(\)\);/);
+  assert.match(screen, /return projectMenuEntries\(project, \{ inside, canShare: mayShareOwn\(app\.user\?\.role\) \}\)\.map\(\(entry\) => items\[entry\]\(\)\);/);
   for (const key of ['open', 'share', 'people', 'settings', 'duplicate', 'cardTrash', 'push', 'news', 'deadlines', 'delete', 'leave']) assert.match(screen, new RegExp(`\\n    ${key}: \\(\\) => \\(`), key);
   assert.match(read('public/js/screens/project.js'), /projectMenuItems\(p, \{ inside: true,/);
 });

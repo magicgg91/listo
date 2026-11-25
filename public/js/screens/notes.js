@@ -33,6 +33,7 @@ import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList, listSortButton } from '../format.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
+import { mayShareOwn } from '../access.js';
 import { syncPill, toast, drawWhenIdle, openMenu, confirmDialog, offlineBanner, onPc } from '../ui.js';
 import { topBell } from '../bell.js';
 import { createSearchRow } from '../search-row.js';
@@ -86,8 +87,9 @@ const found = (notes, query) => (isSearching(query) ? notes.filter((note) => not
 const withLabel = (notes, labelId) => (labelId ? notes.filter((note) => (note.labelIds ?? []).includes(labelId)) : notes);
 
 // « Partager » (propriétaire) ou « Personnes » (les autres), ou rien
+// (un propriétaire invité ne partage jamais : « Personnes »)
 function sharing(note, owner, withPeople) {
-  const entry = shareEntry({ owner, withPeople });
+  const entry = shareEntry({ owner: owner && mayShareOwn(app.user?.role), withPeople });
   return entry ? { ...entry, onSelect: () => openNoteShare(note.id) } : null;
 }
 

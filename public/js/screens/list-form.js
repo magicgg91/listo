@@ -236,7 +236,10 @@ function form(list, users) {
     forRows.push(row);
     return row;
   };
-  const forOthers = users.filter((u) => u.id !== me.id).sort((a, b) => compareNames(a.displayName, b.displayName));
+  // « Pour qui ? » : un autre compte de mon annuaire, jamais un invité
+  // (l'annuaire de l'Admin les contient, avec leur rôle ; le serveur le
+  // refuse aussi, docs/cadrage-comptes.md 5.6)
+  const forOthers = users.filter((u) => u.id !== me.id && u.role !== 'guest').sort((a, b) => compareNames(a.displayName, b.displayName));
   const forField = h('div', { class: 'field' },
     h('span', { class: 'field__label', id: 'for-label' }, t('formulaire.pourQui')),
     wishesLocked

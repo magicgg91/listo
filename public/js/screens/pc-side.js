@@ -412,8 +412,10 @@ export function createPcSide() {
         avatar(user.displayName),
         h('span', { class: 'pc-user__text' },
           h('span', { class: 'pc-user__name' }, user.displayName ?? ''),
-          // Rôle du compte (pas un droit sur une liste) : « Admin » seulement
-          user.role === 'admin' ? h('span', { class: 'pc-user__role' }, t('navigation.role.admin')) : null),
+          // Rôle du compte (pas un droit sur une liste) : « Admin » ou
+          // « Invité » (docs/cadrage-comptes.md, 4.3) ; rien pour un Utilisateur
+          user.role === 'admin' ? h('span', { class: 'pc-user__role' }, t('navigation.role.admin'))
+            : user.role === 'guest' ? h('span', { class: 'pc-user__role' }, t('navigation.role.invite')) : null),
         iconButton('sliders', t('navigation.reglages'), () => navigate('settings')))));
   draw();
 

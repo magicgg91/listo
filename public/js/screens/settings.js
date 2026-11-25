@@ -60,11 +60,21 @@ export function row({ iconName, title, sub, end, onClick }) {
 
 // --- Réglages ---
 
-// Pastille du rôle : « Admin » ou « Utilisateur » (aussi utilisée par account.js)
+// Pastille du rôle : « Admin », « Utilisateur » ou « Invité » (aussi
+// utilisée par account.js ; rôle calculé par le serveur, public/js/access.js)
 export function roleChip(user) {
-  return user.role === 'admin'
-    ? h('span', { class: 'chip chip--strong' }, icon('shield', 'icon--xs'), t('reglages.role.admin'))
-    : h('span', { class: 'chip' }, t('reglages.role.utilisateur'));
+  if (user.role === 'admin') return h('span', { class: 'chip chip--strong' }, icon('shield', 'icon--xs'), t('reglages.role.admin'));
+  return h('span', { class: 'chip' }, user.role === 'guest' ? t('reglages.role.invite') : t('reglages.role.utilisateur'));
+}
+
+// Encadré « Compte invité » (maquette design/comptes invite-reglages-1) :
+// une phrase, sans aucune donnée (ni nom de personne, ni nom de projet).
+// Seulement pour un invité ; rien pour les autres comptes.
+export function guestNote(user) {
+  if (user.role !== 'guest') return null;
+  return h('div', { class: 'acct-sees' },
+    h('p', { class: 'acct-sees__title' }, icon('user'), t('reglages.invite.titre')),
+    h('p', { class: 'acct-sees__text' }, t('reglages.invite.texte')));
 }
 
 export function renderSettings() {
@@ -95,7 +105,8 @@ export function renderSettings() {
       h('h2', { class: 'section-title' }, t('reglages.general')),
       h('div', { class: 'group' }, homeRow(), featuresRow(), generalRows(isAdmin)),
       h('h2', { class: 'section-title' }, t('reglages.informations')),
-      h('div', { class: 'group' }, helpRow(), aboutRow(isAdmin))));
+      h('div', { class: 'group' }, helpRow(), aboutRow(isAdmin)),
+      guestNote(user)));
 }
 
 // « Général » (téléphone et ordinateur) : Accueil (home-settings.js, en
@@ -186,7 +197,8 @@ function renderSettingsPc() {
       section(t('reglages.informations'), h('div', { class: 'group' },
         helpRow(),
         row({ iconName: 'keyboard', title: t('reglages.pc.raccourcis'), sub: t('reglages.pc.raccourcis.detail'), onClick: () => openShortcuts() }),
-        aboutRow(isAdmin))))));
+        aboutRow(isAdmin))),
+      guestNote(user))));
 }
 
 // Ligne « Notifications » (téléphone et ordinateur) : ouvre l'écran des

@@ -51,6 +51,7 @@ import { navigate, goBack, pathFor } from '../router.js';
 import { namesList, dueDateLabel, todayKey } from '../format.js';
 import { nowTime, timeLabel } from '../due-time.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
+import { mayShareOwn } from '../access.js';
 import { syncPill, toast, drawWhenIdle, openMenu, openSheet, offlineBanner, onPc, isTextField } from '../ui.js';
 import { createSearchRow } from '../search-row.js';
 import { loupeButton } from '../tabbar.js';
@@ -391,7 +392,7 @@ export const projectGone = () => h('div', { class: 'empty' },
 // qui partage, dans le nom lu
 function peopleLabel(project) {
   const others = otherMembers(project, app.user.id).map((m) => m.displayName);
-  if (project.role === 'owner') return others.length ? t('projets.partager.avec', { names: namesList(others) }) : t('projets.menu.partager');
+  if (project.role === 'owner' && mayShareOwn(app.user?.role)) return others.length ? t('projets.partager.avec', { names: namesList(others) }) : t('projets.menu.partager');
   return t('projets.personnes.avec', { names: namesList(others) });
 }
 
@@ -760,7 +761,7 @@ function renderBoard(projectId, onLeave) {
     document.title = `${p.name} · Listo`;
     sub.lastChild.textContent = projectSub(p, true);
     const people = (p.members ?? []).filter((m) => m.active !== false);
-    shareText.textContent = rights.share ? t('projets.menu.partager') : t('projets.menu.personnes');
+    shareText.textContent = rights.share && mayShareOwn(app.user?.role) ? t('projets.menu.partager') : t('projets.menu.personnes');
     shareButton.setAttribute('aria-label', peopleLabel(p));
     replace(shareFaces, people.length > 1 ? people.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })) : null);
     filter = cleanFilter(p, filter);

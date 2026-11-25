@@ -69,13 +69,15 @@ export const projectMatches = (project, query) => !isSearching(query) || matches
 // notifications), news (masquer les nouveautés, projet partagé), deadlines
 // (« Afficher dans Échéances », option « Échéances » du projet allumée),
 // puis, après un trait, delete (propriétaire) ou leave.
-export function projectMenuEntries(project, { inside = false } = {}) {
+// canShare : faux pour un compte invité (docs/cadrage-comptes.md : il ne
+// partage jamais ce qu'il possède ; « Personnes » à la place de « Partager »)
+export function projectMenuEntries(project, { inside = false, canShare = true } = {}) {
   const rights = projectRights(project?.role);
   if (!rights.view) return [];
   const shared = (project.members ?? []).length > 1;
   return [
     inside ? null : 'open',
-    rights.share ? 'share' : 'people',
+    rights.share && canShare ? 'share' : 'people',
     rights.settings ? 'settings' : null,
     rights.duplicate ? 'duplicate' : null,
     'cardTrash',

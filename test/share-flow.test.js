@@ -35,7 +35,7 @@ test('entrée des menus selon le rôle : « Partager » (propriétaire), « Pers
   assert.deepEqual(shareEntry({ owner: true, withPeople: false }), { icon: 'users', label: 'Partager' });
   // Listes : la même entrée aux deux endroits (menu ⋮ de la liste, ⋯ de la carte), pour chaque rôle
   const actions = code('public/js/screens/list-actions.js');
-  assert.match(actions, /const share = \{ \.\.\.shareEntry\(\{ owner: Boolean\(list\.isOwner\) \}\), onSelect: \(\) => openListShare\(list\.id\) \};/);
+  assert.match(actions, /const share = \{ \.\.\.shareEntry\(\{ owner: Boolean\(list\.isOwner\) && mayShareOwn\(app\.user\?\.role\) \}\), onSelect: \(\) => openListShare\(list\.id\) \};/);
   assert.match(actions, /wishes \? null : duplicate,\s*share,\s*mute,/);
   assert.match(actions, /\[duplicate, share, mute, pushMute, leave\] : \[share, mute, pushMute, leave\]/);
   assert.doesNotMatch(actions, /partagerLien|openShareSheet/);

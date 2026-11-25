@@ -10,6 +10,10 @@ export default {
   },
   'reglages.role.admin': 'Admin',
   'reglages.role.utilisateur': 'Utilisateur',
+  'reglages.role.invite': 'Invité',
+  // Encadré « Compte invité » des Réglages (un invité seulement)
+  'reglages.invite.titre': 'Compte invité',
+  'reglages.invite.texte': 'Votre accès est réglé par l\'Admin : vous voyez ce qu\'on vous partage, et ses membres.',
 
   // Réglages (téléphone)
   'reglages.titre': 'Réglages',

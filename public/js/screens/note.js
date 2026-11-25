@@ -58,6 +58,7 @@ import { h, icon, iconButton, replace, avatar } from '../dom.js';
 import { navigate, goBack } from '../router.js';
 import { dateTimeLabel, relativeTime, namesList } from '../format.js';
 import { app, onDataChange, isDesktop } from '../app.js';
+import { mayShareOwn } from '../access.js';
 import { openMenu, openSheet, confirmDialog, toast, onSyncChange, currentSyncState, offlineBanner } from '../ui.js';
 import { uuid } from '../api.js';
 import { noteTitle, NOTE_TITLE_MAX, NOTE_BODY_MAX } from '../notes.js';
@@ -459,7 +460,9 @@ function noteEditor(initialId, onLeave, { pc }) {
   });
   function drawPeople(n) {
     const people = n ? notePeople(n) : [];
-    const owner = Boolean(n) && isNoteOwner(n);
+    // Propriétaire qui peut partager (un invité ne partage jamais : il voit
+    // « Personnes », s'il y en a)
+    const owner = Boolean(n) && isNoteOwner(n) && mayShareOwn(app.user?.role);
     peopleButton.hidden = !n || (!owner && !people.length);
     if (peopleButton.hidden) return;
     const names = namesList(people.map((m) => m.displayName));

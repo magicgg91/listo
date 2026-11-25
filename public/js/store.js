@@ -356,8 +356,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         subtasksEnabled: op.subtasksEnabled === true,
         addMode: ADD_MODES.includes(op.addMode) ? op.addMode : defaultAddMode(isShoppingList(type)),
         members: [
-          { id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true, access: 'modification' },
-          ...(beneficiary ? [{ id: beneficiary.id, username: beneficiary.username, displayName: beneficiary.displayName, active: true, isOwner: false, access: 'modification' }] : []),
+          { id: user.id, displayName: user.displayName, active: true, isOwner: true, access: 'modification' },
+          ...(beneficiary ? [{ id: beneficiary.id, displayName: beneficiary.displayName, active: true, isOwner: false, access: 'modification' }] : []),
         ],
         createdAt: now,
         updatedAt: now,

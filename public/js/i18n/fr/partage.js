@@ -130,4 +130,10 @@ export default {
   'partage.projet.titre': 'Partager « {name} »',
   'partage.projet.intro': 'Avec des personnes de Listo seulement : un projet n\'a pas de lien public. Le droit vaut pour tout le projet.',
   'partage.vue.proprietaireSeul.projet': 'Seul le propriétaire choisit les personnes et leur droit.',
+
+  // Comptes invités (docs/cadrage-comptes.md) : « Invité · discret » sous le
+  // prénom, dans la feuille de l'Admin seulement ; « Personnes » d'un
+  // propriétaire invité (il ne partage jamais)
+  'partage.personnes.invite': 'Invité · discret',
+  'partage.vue.invite': 'Un compte invité ne partage pas : l\'Admin s\'en charge.',
 };

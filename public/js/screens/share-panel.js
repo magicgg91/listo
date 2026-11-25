@@ -48,6 +48,7 @@ import { noteTitle } from '../notes.js';
 import { linkPart, noteLinkPart, knownLink } from './share.js';
 import { peoplePicker, roleLegend } from './share-picker.js';
 import { peopleSummary, linkSummary, membersChanged } from '../sharing.js';
+import { mayShareOwn } from '../access.js';
 import { t, compareText } from '../i18n.js';
 
 // Ce qui est partagé : une liste…
@@ -113,6 +114,10 @@ function projectSubject(projectId) {
   };
 }
 
+// Le compte connecté peut-il partager ce qu'il possède ? Jamais un invité
+// (docs/cadrage-comptes.md) : propriétaire invité, « Personnes » en lecture
+const sharesOwn = () => mayShareOwn(app.user?.role);
+
 // Point d'entrée : le choix pour le propriétaire, « Personnes » pour les autres
 export const openListShare = (listId) => openShare(listSubject(listId));
 export const openNoteShare = (noteId) => openShare(noteSubject(noteId));
@@ -121,13 +126,13 @@ export function openProjectShare(projectId) {
   const subject = projectSubject(projectId);
   const item = subject.current();
   if (!item) return null;
-  return subject.owner(item) ? openPeopleSheet(subject) : openPeopleView(subject);
+  return subject.owner(item) && sharesOwn() ? openPeopleSheet(subject) : openPeopleView(subject);
 }
 
 function openShare(subject) {
   const item = subject.current();
   if (!item) return null;
-  return subject.owner(item) ? openChooser(subject) : openPeopleView(subject);
+  return subject.owner(item) && sharesOwn() ? openChooser(subject) : openPeopleView(subject);
 }
 
 // --- Le choix « Partager « Maison » » (propriétaire) ---
@@ -310,7 +315,8 @@ function openPeopleView(subject) {
   const sheet = openSheet({
     title: t('partage.vue.titre'),
     sub: subject.name(start),
-    content: [people, h('p', { class: 'share-choice__hint' }, subject.project ? t('partage.vue.proprietaireSeul.projet') : t('partage.vue.proprietaireSeul'))],
+    content: [people, h('p', { class: 'share-choice__hint' }, subject.owner(start) ? t('partage.vue.invite')
+      : subject.project ? t('partage.vue.proprietaireSeul.projet') : t('partage.vue.proprietaireSeul'))],
     scroll: true,
     pc: 'modal',
     size: 'sm',

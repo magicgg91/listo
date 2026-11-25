@@ -27,6 +27,7 @@ import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList, todayKey } from '../format.js';
 import { nowTime } from '../due-time.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
+import { mayShareOwn } from '../access.js';
 import { syncPill, toast, drawWhenIdle, openMenu, openSheet, confirmDialog, offlineBanner, onPc } from '../ui.js';
 import { topBell } from '../bell.js';
 import { createSearchRow } from '../search-row.js';
@@ -113,7 +114,7 @@ export function projectMenuItems(project, { inside = false, onGone = () => {} } 
     delete: () => ({ icon: 'trash', label: t('projets.menu.supprimer'), danger: true, separated: true, onSelect: () => askDelete(project, onGone) }),
     leave: () => ({ icon: 'logout', label: t('projets.menu.quitter'), danger: true, separated: true, onSelect: () => askLeave(project, onGone) }),
   };
-  return projectMenuEntries(project, { inside }).map((entry) => items[entry]());
+  return projectMenuEntries(project, { inside, canShare: mayShareOwn(app.user?.role) }).map((entry) => items[entry]());
 }
 
 // Dupliquer (tout membre, Lecture seule compris ; décision du 25 novembre

@@ -5,19 +5,25 @@
 // ligne). Aucun texte ici, aucune page touchée : des fonctions « pures »,
 // testées automatiquement (test/features.test.js).
 //
-// Le réglage : { notes } (vrai : la fonction est utilisée).
+// Le réglage : { notes, projects } (vrai : la fonction est utilisée).
 // - notes : les notes (vrai au départ). Coupées, elles disparaissent des
 //   écrans de cette personne seulement : ni bouton « Notes » dans le
 //   bandeau du bas, ni tuile, ni entrée du menu de gauche, ni nouveautés,
 //   ni notifications. Rien n'est effacé : ses notes et celles qu'on lui a
 //   partagées restent en base, et reviennent quand elle les rallume.
+// - projects : les projets (docs/cadrage-projets.md, 25 novembre 2026),
+//   COUPÉS au départ pour tous les comptes. Coupés : rien des projets
+//   n'est envoyé à ses appareils (ni projet, ni carte), ses opérations des
+//   projets sont refusées par le serveur, leurs adresses mènent au premier
+//   écran. Rien n'est effacé : ses projets et ceux qu'on lui a partagés
+//   reviennent quand elle les rallume.
 //
 // D'autres fonctions pourront suivre de la même façon (une colonne
 // <nom>_enabled dans la table users, une entrée ici) ; chacune a sa valeur
 // de départ.
 
 // Les fonctions, dans l'ordre de l'écran, avec leur valeur de départ
-export const FEATURE_DEFAULTS = { notes: true };
+export const FEATURE_DEFAULTS = { notes: true, projects: false };
 export const FEATURES = Object.keys(FEATURE_DEFAULTS);
 
 // Écrans (noms du routeur, router.js) qui appartiennent à une fonction :
@@ -27,6 +33,7 @@ export const FEATURES = Object.keys(FEATURE_DEFAULTS);
 // (trash-tabs.js)
 export const FEATURE_ROUTES = {
   notes: ['notes', 'newNote', 'note'],
+  projects: ['projects', 'project', 'projectCard', 'projectSettings', 'projectTrash'],
 };
 
 // Réglage de départ (aucun choix fait)
@@ -47,7 +54,7 @@ export function normalizeFeatures(value) {
   return features;
 }
 
-// Problème d'une modification { notes? } (le contenu d'une opération
+// Problème d'une modification { notes?, projects? } (le contenu d'une opération
 // « account.features », sans son identifiant ni son type) : le nom du texte
 // de refus, ou null si tout va bien. Refusés : autre chose qu'un objet,
 // nom inconnu, valeur qui n'est pas un booléen, rien à modifier.
@@ -68,6 +75,7 @@ export function applyFeaturesChange(features, change) {
 // La fonction est-elle utilisée ? (réglage absent : valeur de départ)
 export const featureOn = (features, name) => normalizeFeatures(features)[name] === true;
 export const notesOn = (features) => featureOn(features, 'notes');
+export const projectsOn = (features) => featureOn(features, 'projects');
 
 // Fonction dont dépend un écran (nom du routeur, ou d'une tuile, d'un
 // bouton du bandeau, d'un premier écran : ce sont les mêmes noms), ou null

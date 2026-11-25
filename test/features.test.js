@@ -20,7 +20,7 @@ import { GROUP_MS, NOTE_QUIET_MS } from '../server/notify.js';
 import { openDatabase, schemaVersion, MIGRATIONS } from '../server/db.js';
 import { featuresFromRow } from '../server/features.js';
 import {
-  FEATURES, FEATURE_ROUTES, defaultFeatures, normalizeFeatures, featuresChangeProblem, applyFeaturesChange, featureOn, notesOn, featureOf, screenAllowed,
+  FEATURES, FEATURE_ROUTES, defaultFeatures, normalizeFeatures, featuresChangeProblem, applyFeaturesChange, featureOn, notesOn, projectsOn, featureOf, screenAllowed,
 } from '../public/js/features.js';
 import { HOME_TILES, firstScreen, tabScreens, startScreens, tilesFor, shownTiles, mergeTileOrder } from '../public/js/home-tiles.js';
 import { emptyState, applyOp, loadSync, mergeSync, toSnapshot, fromSnapshot, isNoteUnread, inboxShownRows, inboxUnread } from '../public/js/store.js';
@@ -35,7 +35,7 @@ const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 // Code sans les commentaires de ligne
 const code = (file) => read(file).split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
-const OFF = { notes: false };
+const OFF = { notes: false, projects: false };
 
 // Résultat d'une opération, sans son identifiant
 async function run(client, op) {
@@ -46,10 +46,13 @@ async function run(client, op) {
 // --- Règles partagées (public/js/features.js) ---
 
 test('réglage de départ : les notes sont utilisées ; valeurs abîmées ou inconnues écartées', () => {
-  assert.deepEqual(FEATURES, ['notes']);
-  assert.deepEqual(defaultFeatures(), { notes: true });
-  for (const value of [null, undefined, 'abîmé', 42, {}, [], { notes: 'non' }, { notes: 0 }]) assert.deepEqual(normalizeFeatures(value), { notes: true }, JSON.stringify(value));
-  assert.deepEqual(normalizeFeatures({ notes: false, projets: false }), { notes: false });
+  assert.deepEqual(FEATURES, ['notes', 'projects']);
+  assert.deepEqual(defaultFeatures(), { notes: true, projects: false }, 'les projets sont coupés au départ');
+  for (const value of [null, undefined, 'abîmé', 42, {}, [], { notes: 'non' }, { notes: 0 }]) assert.deepEqual(normalizeFeatures(value), { notes: true, projects: false }, JSON.stringify(value));
+  assert.deepEqual(normalizeFeatures({ notes: false, projets: true }), { notes: false, projects: false });
+  assert.deepEqual(normalizeFeatures({ projects: true }), { notes: true, projects: true });
+  assert.equal(projectsOn(null), false);
+  assert.equal(projectsOn({ projects: true }), true);
   assert.equal(notesOn(null), true);
   assert.equal(notesOn(OFF), false);
   assert.equal(featureOn({ notes: true }, 'notes'), true);
@@ -68,7 +71,8 @@ test('featuresChangeProblem : seulement des fonctions connues, des booléens ; r
   assert.equal(featuresChangeProblem({ projets: true }), 'ops.fonctionInconnue');
   assert.equal(featuresChangeProblem({ notes: false, userId: 1 }), 'ops.fonctionInconnue');
   assert.deepEqual(applyFeaturesChange(null, OFF), OFF);
-  assert.deepEqual(applyFeaturesChange(OFF, { notes: true }), { notes: true });
+  assert.deepEqual(applyFeaturesChange(OFF, { notes: true }), { notes: true, projects: false });
+  assert.deepEqual(applyFeaturesChange(OFF, { projects: true }), { notes: false, projects: true });
   for (const key of ['ops.fonctionInconnue', 'ops.fonctionsInvalides']) assert.ok(fr[key] && en[key], key);
 });
 
@@ -138,8 +142,8 @@ test('tuiles : la tuile Notes n\'est ni affichée ni proposée quand les notes s
 
 test('migration 41 : colonne notes_enabled (1 au départ, 0 ou 1 seulement) ; une base en version 40 migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 42);
-  assert.equal(schemaVersion(db), 42);
+  assert.equal(MIGRATIONS.length, 43);
+  assert.equal(schemaVersion(db), 43);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   assert.equal(db.prepare('SELECT notes_enabled FROM users WHERE id = ?').pluck().get(id), 1);
   assert.deepEqual(featuresFromRow(db.prepare('SELECT * FROM users WHERE id = ?').get(id)), defaultFeatures());
@@ -154,7 +158,7 @@ test('migration 41 : colonne notes_enabled (1 au départ, 0 ou 1 seulement) ; un
   old.prepare("INSERT INTO users (username, display_name, password_hash, role, home_enabled, home_start) VALUES ('paul', 'Paul', 'x', 'user', 0, 'notes')").run();
   old.close();
   const migrated = openDatabase(file);
-  assert.equal(schemaVersion(migrated), 42);
+  assert.equal(schemaVersion(migrated), 43);
   const paul = migrated.prepare("SELECT * FROM users WHERE username = 'paul'").get();
   assert.equal(paul.notes_enabled, 1);
   assert.equal(paul.home_enabled, 0);
@@ -241,7 +245,7 @@ test('ni les assistants IA, ni le lien public, ni l\'administration ne voient ce
   }
   for (const file of ['server/lists.js', 'server/auth.js', 'server/routes/me.js']) assert.doesNotMatch(read(file), /notes_enabled/, file);
   const service = read('server/features.js');
-  assert.match(service, /const COLUMNS = \{ notes: 'notes_enabled' \};/);
+  assert.match(service, /const COLUMNS = \{ notes: 'notes_enabled', projects: 'projects_enabled' \};/);
   // Le compte vient toujours de la session (user.id), jamais de l'opération
   assert.match(read('server/lists.js'), /'account\.features'\(user, op\) \{\s*const \{ id, type, \.\.\.change \} = op;\s*const \{ problem, changed \} = features\.setFeatures\(user\.id, change\);\s*if \(problem\) throw new OpError\(400, problem\);\s*if \(changed\) changedForMe\(null\);/);
   // Dans le cahier des charges : les futurs outils MCP des notes refuseront
@@ -347,11 +351,11 @@ test('copie locale : synchronisation, opération hors ligne (mêmes règles), co
   loadSync(state, { serverTime: 't', listIds: [], lists: [], items: [], stores: [], aisles: [], history: [], features: OFF });
   assert.deepEqual(state.features, OFF);
   applyOp(state, { id: uuid(), type: 'account.features', notes: true }, { user: { id: 1 } });
-  assert.deepEqual(state.features, { notes: true });
+  assert.deepEqual(state.features, { notes: true, projects: false });
   // Refusées par les mêmes règles : rien ne change
   applyOp(state, { id: uuid(), type: 'account.features', notes: 'non' }, { user: { id: 1 } });
   applyOp(state, { id: uuid(), type: 'account.features', notes: false, userId: 2 }, { user: { id: 1 } });
-  assert.deepEqual(state.features, { notes: true });
+  assert.deepEqual(state.features, { notes: true, projects: false });
   applyOp(state, { id: uuid(), type: 'account.features', notes: false }, { user: { id: 1 } });
   assert.deepEqual(state.features, OFF);
   // Gardée sur le téléphone et relue à l'identique

@@ -904,7 +904,7 @@ On the phone, the bar at the bottom leads to the main screens: “Home”, “Du
 Settings, “Home” (the first row of “General”) sets up the Home screen for your account: the choice applies to all your devices, and also works offline.
 
 - “Tiles shown”: one switch per tile, to hide or show it (“To give” only appears anyway when you have reserved a gift). The “Account” tile is always shown: there is no bottom bar on Home, and it is the tile that leads to Settings.
-- “Projects” tile (when you have enabled projects): tap the “Projects” row itself (not its switch) to choose what the tile shows; the current choice is written below it, and applies straight away. “My cards” (the default): your three most urgent cards, across all projects. “My projects”: one row per project, most recent activity first, with the number of cards, those for you and those overdue (in red), or “read only”; beyond three projects, the first two and “All projects”. “One project”, chosen from the list of your projects: the tile's title is its name (it opens the project), then its columns with their number of cards (on two lines at most, ‘+2’ for the others) and your two most urgent cards in that project. If you no longer see that project (left, deleted, projects disabled), the tile goes back to “My cards” on its own.
+- “Projects” tile (when you have enabled projects): tap the “Projects” row itself (not its switch) to choose what the tile shows; the current choice is written below it, and applies straight away. “My cards” (the default): your three most urgent cards, across all projects. “My projects”: one row per project, most recent activity first, with the number of cards, those for you and those overdue (in red), or “read only”; beyond three projects, the first two and “All projects”. “One project”, chosen from the list of your projects: the tile's title is its name (it opens the project), then its columns with their number of cards (on two lines at most, ‘+2’ for the others) and your two most urgent cards in that project; with no card for you in that project, all its columns are shown. If you no longer see that project (left, deleted, projects disabled), the tile goes back to “My cards” on its own.
 - “Reorder”: drag a tile by its handle, or use the up and down arrows; “Done” closes this mode. Home follows this order; on the phone, a tile left alone on its row takes the full width.
 - “Show the Home screen” disabled: Listo opens on the “First screen” you chose (“Due”, “Lists”, “Notes”, or “Projects” when they are enabled; “Lists” at first), and the “Home” button leaves the bottom bar. The notification bell then moves to the top of “Due”, “Lists” and “Notes” ([6.1 The Notifications page](#notif-page)). On a computer, the “Home” entry of the menu on the left goes away, and the logo leads to the first screen you chose.
 
@@ -1321,15 +1321,25 @@ A project's ⋮ menu: “Show in Due”, a switch, disabled at first (a check ma
 
 ### 7.8 The project's columns and labels
 
-“Project settings” (⋮ menu of an open project; owner and “Can edit”):
+“Project settings” (a project's ⋮ menu; owner and “Can edit”) has two tabs under the title, always visible when you scroll: “Project” and ‘Labels · 25’ (the project's number of labels). Tap a tab to switch from one to the other (with the keyboard: left and right arrows). The Back button returns to the project, and the chosen tab is kept if you refresh the page.
+
+**The “Project” tab**
 
 - Project name (the owner only).
-- Columns: one row per column, with its number of cards. Drag the handle on the left to change the order, or tap the pencil: name (40 characters at most, only once in the project), color among eight, position (before or after its neighbors) and “Delete column”. “Add a column” adds one at the end (20 at most).
-- Deleting an empty column: it goes right away. A column with cards: choose to move its cards to another column, or to delete them with it (they go to the project's “Deleted cards”). A deleted column can't be restored; a project always keeps at least one column.
-- Project labels: specific to this project (the notes' labels don't mix in), a given label existing only once (upper case and accents count the same). “New label”; the pencil renames, changes the color or deletes (the label is then removed from its cards). 50 labels at most per project.
 - “Priority” (the owner): a project option, disabled at first. Enabled, each card has a priority, “Low”, “Normal” or “High” ([7.4 An open card](#projets-carte)); disabled again, priorities are kept without being shown.
 - “Due dates” (the owner and “Can edit”): a project option, enabled at first: a date, a time and a reminder on cards, and the “Done” box ([7.4 An open card](#projets-carte)). Disabled, nothing is erased, but cards no longer have a due date, a reminder or a “Done” box: they are never overdue, no longer go to “Due” or the morning summary, and “Show in Due” leaves the ⋮ menu. Enabled again, everything comes back as it was.
-- “Delete project” (the owner).
+- Columns: one row per column, with its number of cards. Drag the handle on the left to change the order, or tap the pencil: name (40 characters at most, only once in the project), color among eight, position (before or after its neighbors) and “Delete column”. “Add a column” adds one at the end (20 at most).
+- Deleting an empty column: it goes right away. A column with cards: choose to move its cards to another column, or to delete them with it (they go to the project's “Deleted cards”). A deleted column can't be restored; a project always keeps at least one column.
+- “Delete project” (the owner), at the very bottom.
+- On a computer: the name, the options and “Delete project” on the left, the columns on the right.
+
+**The “Labels” tab**
+
+- Project labels are specific to this project (the notes' labels don't mix in), a given label existing only once (upper case and accents count the same). 50 labels at most per project.
+- “Search labels”, at the top: type part of the name; upper case and accents don't matter (‘cafe’ finds ‘Café’). The part found is underlined in the label, and a line says how many are left (‘12 labels of 25’). The cross clears the search.
+- “New label” is the first row. While searching, the suggested name is the text you searched for: all that's left is to choose the color.
+- Labels are sorted alphabetically, ignoring upper case and accents, and numbers are read as numbers (‘2026 2’ before ‘2026 10’). Each row says how many cards the label is on; the pencil renames it, changes its color or deletes it (it is then removed from its cards).
+- On a computer: the search field, then the labels in two columns.
 
 <a id="projets-roles"></a>
 

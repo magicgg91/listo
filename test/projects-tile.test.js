@@ -353,6 +353,11 @@ test('Réglages › Accueil : ligne « Projets » à deux zones, feuille « Tuil
   // Projets de la personne seulement (copie locale), et le choix affiché suit la règle de l'Accueil
   assert.match(screen, /const projects = projectsInOrder\(\);/);
   assert.match(screen, /const shown = projectsTileShown\(home, app\.data\);/);
+  // « Un projet » sans carte pour moi : pas de pastille « +N », toutes les
+  // colonnes restent visibles (fitChips ne cache rien sans elle)
+  const homeScreen = code('public/js/screens/home.js');
+  assert.match(homeScreen, /urgent\.length \? h\('li', \{ class: 'colchip colchip--more', hidden: true \}\) : null/);
+  assert.match(homeScreen, /const more = list\.querySelector\('\.colchip--more'\);\n  if \(!more\) return;/);
   for (const key of ['reglages.accueil.projets.cartes', 'reglages.accueil.projets.projets', 'reglages.accueil.projets.projet', 'reglages.accueil.projets.titre', 'reglages.accueil.projets.section', 'reglages.accueil.projets.aucun']) {
     assert.ok(fr[key] && en[key], key);
   }

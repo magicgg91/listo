@@ -91,6 +91,9 @@ const ALLOWED_FOCUS = new Map([
   // d'une note, toucher le texte affiché (ou « + Ajouter une description »)
   // le remplace par le champ, curseur à l'endroit touché ; un bouton de la
   // barre de mise en forme garde le curseur dans le champ
+  // Réglages d'un projet en deux onglets (25 novembre 2026) : flèches
+  // gauche et droite d'un onglet à l'autre (role="tablist")
+  ['public/js/screens/project-settings.js: nextTab', 'flèches dans les onglets des réglages d\'un projet (un onglet, jamais un champ)'],
   ['public/js/screens/card-description.js: input', 'EXCEPTION voulue : description d\'une carte, après un appui sur son texte affiché ou « + Ajouter une description »'],
   // Barre de mise en forme d'une note (24 novembre 2026) : flèches,
   // Début et Fin d'un bouton à l'autre (role="toolbar"), des boutons

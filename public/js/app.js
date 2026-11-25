@@ -34,6 +34,7 @@ import { firstScreen, normalizeHome } from './home-tiles.js';
 import { normalizeFeatures, screenAllowed, notesOn, projectsOn, screenFeatures } from './features.js';
 import { normalizeAllowed, mayCreateProjects } from './access.js';
 import { askedTrashTab } from './trash-tabs.js';
+import { askedSettingsTab } from './project-settings-tabs.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
 import { renderListForm, openListFormPanel } from './screens/list-form.js';
@@ -928,7 +929,16 @@ function show(route) {
         openProjectCardPanel(params.id, params.cardId);
       } else mount((onLeave) => renderProjectCard(params.id, params.cardId, onLeave));
       break;
-    case 'projectSettings': mount((onLeave) => renderProjectSettings(params.id, onLeave)); break;
+    // Réglages d'un projet, deux onglets (project-settings-tabs.js) :
+    // l'adresse d'avant les onglets ouvre « Projet » ; un onglet inconnu
+    // mène à cette adresse
+    case 'projectSettings': mount((onLeave) => renderProjectSettings(params.id, 'projet', onLeave)); break;
+    case 'projectSettingsTab': {
+      const tab = askedSettingsTab(params.tab);
+      if (tab) mount((onLeave) => renderProjectSettings(params.id, tab, onLeave));
+      else navigate('projectSettings', { id: params.id }, { replace: true });
+      break;
+    }
     case 'projectTrash': mount((onLeave) => renderProjectTrash(params.id, onLeave)); break;
     // Ordinateur : le formulaire s'ouvre dans une fenêtre centrée, sur
     // l'écran en cours (ou sur « Listes », sur la liste à modifier)

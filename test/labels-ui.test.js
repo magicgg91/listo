@@ -36,8 +36,10 @@ test('écrans : textContent seulement, jamais de HTML ; aucun curseur mis tout s
   }
   const sheet = code('public/js/screens/note-labels.js');
   assert.doesNotMatch(sheet, /\.focus\(|autofocus|\.select\(\)/);
-  // Le nom d'une étiquette est un enfant texte (h() le pose en nœud texte)
-  assert.match(sheet, /h\('span', \{ class: 'label__name' \}, label\.name\)/);
+  // Le nom d'une étiquette est un enfant texte (h() le pose en nœud texte) ;
+  // ou, dans la recherche des réglages d'un projet, le même nom en morceaux
+  // (textes et <mark class="hit">, posés par h())
+  assert.match(sheet, /h\('span', \{ class: 'label__name' \}, content \?\? label\.name\)/);
   // Une couleur inconnue ne fabrique jamais de classe : gris
   assert.match(sheet, /class: `label label--\$\{LABEL_COLORS\.includes\(label\.color\) \? label\.color : 'gris'\}`/);
 });

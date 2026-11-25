@@ -1993,6 +1993,44 @@ span.nf-task__box::after { display: none; }
 .radio-row:disabled { opacity: 0.55; }
 .sheet__section { margin: var(--space-1) 4px 0; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
 
+/* 16.53 Réglages du projet en deux onglets (décision du propriétaire du 25
+   novembre 2026, variante A ; screens/project-settings.js) : « Projet »
+   (nom, options, colonnes, « Supprimer le projet ») et « Étiquettes · 25 ».
+   - Onglets : .tabs / .tab du kit (role="tablist", aria-selected : souligné
+     épais ET texte plus foncé, jamais la couleur seule), posés sous le
+     titre, HORS de la zone qui défile (comme ceux de la Corbeille) :
+     toujours visibles, sans position: sticky ; deux onglets de même
+     largeur sur le téléphone, calés à gauche sur ordinateur.
+   - Onglet « Étiquettes » : le champ .searchfield du kit en tête
+     (.kset__search), puis « 12 étiquettes sur 25 » (.kset__found,
+     role="status", caché quand il est vide : hors recherche) ; dans le
+     groupe, « Nouvelle étiquette » en tête puis les étiquettes
+     (.kset__labels). Ordinateur : champ de 360 px, la phrase à sa droite ;
+     les étiquettes sur deux colonnes dans le même groupe, rangées de haut
+     en bas puis dans la seconde colonne.
+   - Partie trouvée dans le nom d'une étiquette : .hit du kit (16.12), mais
+     son soulignement serait coupé par la pastille (.label__name masque ce
+     qui dépasse) : trait dessiné à l'intérieur, couleur de l'étiquette. */
+.kset-tabs { flex: none; }
+.kset-tabs .tab { flex: 1 1 0; }
+.kset-tabs ~ .scroll .kset { padding-top: var(--space-1); }
+.kset .group + .group-title { margin-top: 24px; }
+.kset__search { display: flex; flex-direction: column; gap: 6px; padding: var(--space-1) var(--space-2) var(--space-2); }
+.kset__search .searchfield { flex: none; }
+.kset__found { margin: 0 2px; }
+.kset__found:empty { display: none; }
+.label .hit { margin: 0; padding: 0; border-radius: 0; background: transparent; text-decoration: none; box-shadow: inset 0 -2px 0 currentColor; }
+.app--pc .kset-tabs { margin: 0 var(--pc-gutter); padding: 0; }
+.app--pc .kset-tabs .tab { flex: none; padding: 0 20px; }
+.app--pc .kset-tabs ~ .scroll .pc-settings { padding-top: 20px; }
+.app--pc .kset__search { flex-direction: row; align-items: center; gap: 16px; padding: 0 0 12px; }
+.app--pc .kset__search .searchfield { flex: none; width: 360px; }
+.app--pc .kset--labels { display: block; }
+.app--pc .kset__labels { margin-bottom: -1px; column-count: 2; column-gap: 0; column-rule: 1px solid var(--color-border); }
+.app--pc .kset__labels .label-row { break-inside: avoid; }
+.app--pc .kset__labels .label-row:last-child { border-bottom: 1px solid var(--color-border); }
+.app--pc .kset--labels .label-row--add:not(:last-child) { border-bottom: 1px solid var(--color-border); }
+
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }
 .stage__row[data-theme="dark"] { --stage: #060A12; }

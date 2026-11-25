@@ -45,7 +45,7 @@ export const FEATURES = Object.keys(FEATURE_DEFAULTS);
 export const FEATURE_ROUTES = {
   lists: ['lists', 'list', 'newList', 'editList', 'gifts'],
   notes: ['notes', 'newNote', 'note'],
-  projects: ['projects', 'project', 'projectCard', 'projectSettings', 'projectTrash'],
+  projects: ['projects', 'project', 'projectCard', 'projectSettings', 'projectSettingsTab', 'projectTrash'],
 };
 
 // Réglage de départ (aucun choix fait)

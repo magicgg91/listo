@@ -244,11 +244,15 @@ test('rôles dans l\'interface : seulement les boutons permis (la règle partag�
   assert.equal(projectRights('contributor').columns, false);
   assert.equal(cardRights({ createdByMe: false, assigneeIds: [] }, 2, 'contributor').move, false);
   assert.equal(cardRights({ createdByMe: true, assigneeIds: [] }, 2, 'contributor').remove, true);
+  // Menu ⋮ d'un projet : la règle partagée (project-view.js, projectMenuEntries ; test/projects-options.test.js)
+  const view = code('public/js/project-view.js');
+  assert.match(view, /rights\.share \? 'share' : 'people',/);
+  assert.match(view, /rights\.settings \? 'settings' : null,/);
+  assert.match(view, /rights\.duplicate \? 'duplicate' : null,/);
+  assert.match(view, /rights\.trash \? 'delete' : 'leave',/);
   const projects = code('public/js/screens/projects.js');
-  assert.match(projects, /rights\.share\s*\? \{ icon: 'users', label: t\('projets\.menu\.partager'\)/);
-  assert.match(projects, /inside && rights\.settings \?/);
-  assert.match(projects, /rights\.duplicate \?/);
-  assert.match(projects, /rights\.trash\s*\? \{ icon: 'trash', label: t\('projets\.menu\.supprimer'\)/);
+  assert.match(projects, /share: \(\) => \(\{ icon: 'users', label: t\('projets\.menu\.partager'\)/);
+  assert.match(projects, /delete: \(\) => \(\{ icon: 'trash', label: t\('projets\.menu\.supprimer'\), danger: true, separated: true,/);
   const project = code('public/js/screens/project.js');
   // Menu d'une carte : Déplacer vers…, Monter, Descendre (les alternatives au glisser), Dupliquer, Supprimer
   assert.match(project, /can\.move \? \{ icon: 'move', label: t\('projets\.carte\.deplacer'\)/);

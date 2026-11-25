@@ -11,7 +11,7 @@
 // projects.js (projectRights, cardRights), partagé avec le serveur, qui
 // revérifie toujours tout.
 
-import { byPosition, daysLeft, cardDone } from './projects.js';
+import { byPosition, daysLeft, cardDone, cardDated, deadlinesOn, projectRights } from './projects.js';
 import { matches, isSearching } from './search.js';
 import { plainText, taskCount } from './note-format.js';
 import { isLate, compareDue } from './due-time.js';
@@ -56,6 +56,35 @@ export function sortedProjects(state, compare = (a, b) => a.localeCompare(b)) {
 
 // Projet trouvé par la recherche de l'écran « Projets » (sur son nom)
 export const projectMatches = (project, query) => !isSearching(query) || matches(project.name, query);
+
+// --- Menu ⋮ d'un projet ---
+// Les MÊMES entrées, dans le même ordre, sur la carte de l'écran « Projets »
+// et dans la barre du projet ouvert, téléphone et ordinateur (décision du
+// propriétaire du 25 novembre 2026, après l'essai) ; seule différence,
+// « Ouvrir », sur la carte de l'écran « Projets » (inside : false). Chaque
+// entrée seulement si mon rôle la permet (le serveur revérifie tout) :
+// open, share (propriétaire) ou people (les autres), settings (propriétaire
+// et « Peut modifier »), duplicate (tout membre), cardTrash (tout membre :
+// Lecture seule voit la liste, sans bouton), push (couper / réactiver les
+// notifications), news (masquer les nouveautés, projet partagé), deadlines
+// (« Afficher dans Échéances », option « Échéances » du projet allumée),
+// puis, après un trait, delete (propriétaire) ou leave.
+export function projectMenuEntries(project, { inside = false } = {}) {
+  const rights = projectRights(project?.role);
+  if (!rights.view) return [];
+  const shared = (project.members ?? []).length > 1;
+  return [
+    inside ? null : 'open',
+    rights.share ? 'share' : 'people',
+    rights.settings ? 'settings' : null,
+    rights.duplicate ? 'duplicate' : null,
+    'cardTrash',
+    'push',
+    shared ? 'news' : null,
+    deadlinesOn(project) ? 'deadlines' : null,
+    rights.trash ? 'delete' : 'leave',
+  ].filter(Boolean);
+}
 
 // Colonnes d'un projet avec leur nombre de cartes (dans l'ordre)
 export function columnCounts(state, project) {
@@ -133,12 +162,13 @@ export function visibleCards(state, project, columnId, { filter, labelIds = [], 
 
 // --- Repères d'une carte (face, maquettes projet-1 et pc-projet-1) ---
 
-// État de l'échéance : null (aucune), 'done' (case « Fait » cochée : la
-// seule marque de « fait »), 'late' (date ou heure passées), 'today',
-// 'later'. today : « AAAA-MM-JJ », now : « HH:MM » (heure de l'appareil).
-export function cardDueState(card, today, now) {
-  if (!card?.dueDate) return null;
-  if (cardDone(card)) return 'done';
+// État de l'échéance : null (aucune, ou option « Échéances » du projet
+// coupée), 'done' (case « Fait » cochée : la seule marque de « fait »),
+// 'late' (date ou heure passées), 'today', 'later'. today : « AAAA-MM-JJ »,
+// now : « HH:MM » (heure de l'appareil) ; project : le projet de la carte.
+export function cardDueState(card, today, now, project) {
+  if (!cardDated(card, project)) return null;
+  if (cardDone(card, project)) return 'done';
   if (isLate(card.dueDate, card.dueTime, today, now)) return 'late';
   return card.dueDate === today ? 'today' : 'later';
 }
@@ -156,19 +186,23 @@ export function cardMarkers(card) {
 }
 
 // --- « Mes cartes » (5.3) : attribuées à moi, pas faites, pas dans une
-// corbeille, dans les projets que je vois ---
+// corbeille, dans les projets que je vois. Option « Échéances » du projet
+// coupée : la carte se lit sans échéance (jamais faite, jamais en retard) ---
 export function myCards(state, meId, projectId = null) {
   if (meId === null || meId === undefined) return [];
-  const visible = new Set(liveProjects(state).map((project) => project.id));
+  const visible = new Map(liveProjects(state).map((project) => [project.id, project]));
   return [...state.cards.values()].filter((card) => !card.deletedAt && visible.has(card.projectId)
     && (projectId === null || card.projectId === projectId)
-    && (card.assigneeIds ?? []).includes(meId) && !cardDone(card));
+    && (card.assigneeIds ?? []).includes(meId) && !cardDone(card, visible.get(card.projectId)));
 }
+
+// État de l'échéance d'une carte de la copie locale (son projet relu)
+const dueStateIn = (state, card, today, now) => cardDueState(card, today, now, state.projects.get(card.projectId));
 
 // « 2 cartes pour vous · 1 en retard » d'un projet (écran Projets)
 export function myCardCounts(state, meId, projectId, today, now) {
   const mine = myCards(state, meId, projectId);
-  return { count: mine.length, late: mine.filter((card) => cardDueState(card, today, now) === 'late').length };
+  return { count: mine.length, late: mine.filter((card) => dueStateIn(state, card, today, now) === 'late').length };
 }
 
 // Les plus urgentes de mes cartes (tuile de l'Accueil, 3.3) : en retard
@@ -176,10 +210,10 @@ export function myCardCounts(state, meId, projectId, today, now) {
 // plus récemment modifiées
 export function urgentCards(state, meId, today, now, limit = 3) {
   return myCards(state, meId)
-    .map((card) => ({ card, late: cardDueState(card, today, now) === 'late' }))
+    .map((card) => ({ card, late: dueStateIn(state, card, today, now) === 'late', dated: cardDated(card, state.projects.get(card.projectId)) }))
     .sort((a, b) => Number(b.late) - Number(a.late)
-      || Number(!a.card.dueDate) - Number(!b.card.dueDate)
-      || (a.card.dueDate ? compareDue(a.card.dueDate, a.card.dueTime, b.card.dueDate, b.card.dueTime) : 0)
+      || Number(!a.dated) - Number(!b.dated)
+      || (a.dated && b.dated ? compareDue(a.card.dueDate, a.card.dueTime, b.card.dueDate, b.card.dueTime) : 0)
       || String(b.card.updatedAt ?? '').localeCompare(String(a.card.updatedAt ?? '')))
     .slice(0, limit)
     .map(({ card }) => card);

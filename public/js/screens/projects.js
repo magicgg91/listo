@@ -35,8 +35,8 @@ import { keycap } from '../shortcuts.js';
 import { isSearching } from '../search.js';
 import { errorMessage } from '../api.js';
 import { t, compareText } from '../i18n.js';
-import { projectRights, cleanProjectName, PROJECT_NAME_MAX } from '../projects.js';
-import { sortedProjects, projectMatches, columnCounts, cardCount, otherMembers, projectUnread, projectNewsMuted, lastActivity, myCardCounts } from '../project-view.js';
+import { cleanProjectName, PROJECT_NAME_MAX } from '../projects.js';
+import { projectMenuEntries, sortedProjects, projectMatches, columnCounts, cardCount, otherMembers, projectUnread, projectNewsMuted, lastActivity, myCardCounts } from '../project-view.js';
 import * as projectActions from '../project-actions.js';
 import { openProjectShare } from './share-panel.js';
 
@@ -55,51 +55,52 @@ export function roleLabel(role) {
 }
 
 // --- Menu ⋮ d'un projet (carte de l'écran « Projets », barre d'un projet) ---
-// Dans l'ordre : Ouvrir (carte seulement), Partager (propriétaire) ou
-// Personnes (les autres), Réglages du projet (propriétaire et « Peut
-// modifier », dans le projet), Dupliquer le projet (tout membre), Cartes
-// supprimées (dans le projet), Masquer / Afficher les nouveautés (projet
-// partagé), Couper / Réactiver les notifications, « Afficher dans
-// Échéances » (interrupteur à moi, étape 4) ; après un trait, Supprimer
-// (propriétaire) ou Quitter le projet.
+// Les mêmes entrées partout, dans le même ordre (décision du 25 novembre
+// 2026, après l'essai ; la règle : projectMenuEntries, project-view.js) :
+// Ouvrir (carte de l'écran « Projets » seulement), Partager (propriétaire)
+// ou Personnes (les autres), Réglages du projet (propriétaire et « Peut
+// modifier »), Dupliquer le projet (tout membre), Cartes supprimées, Couper
+// / Réactiver les notifications, Masquer / Afficher les nouveautés (projet
+// partagé), « Afficher dans Échéances » (interrupteur à moi, seulement
+// quand l'option « Échéances » du projet est allumée) ; après un trait,
+// Supprimer (propriétaire) ou Quitter le projet.
 // Seulement ce que mon rôle permet ; le serveur revérifie chaque droit.
 export function projectMenuItems(project, { inside = false, onGone = () => {} } = {}) {
-  const rights = projectRights(project.role);
-  const shared = (project.members ?? []).length > 1;
   const muted = projectNewsMuted(app.data, project.id);
   const pushMuted = Boolean(app.data.projectMine?.[project.id]?.mutedPush);
   const inDeadlines = app.data.projectMine?.[project.id]?.inDeadlines === true;
-  return [
-    inside ? null : { icon: 'kanban', label: t('projets.menu.ouvrir'), onSelect: () => navigate('project', { id: project.id }) },
-    rights.share
-      ? { icon: 'users', label: t('projets.menu.partager'), onSelect: () => openProjectShare(project.id) }
-      : { icon: 'users', label: t('projets.menu.personnes'), onSelect: () => openProjectShare(project.id) },
-    inside && rights.settings ? { icon: 'sliders', label: t('projets.menu.reglages'), onSelect: () => navigate('projectSettings', { id: project.id }) } : null,
-    rights.duplicate ? { icon: 'copy', label: t('projets.menu.dupliquer'), onSelect: () => duplicate(project) } : null,
-    inside ? { icon: 'trash', label: t('projets.menu.cartesSupprimees'), onSelect: () => navigate('projectTrash', { id: project.id }) } : null,
-    shared ? {
-      icon: muted ? 'eye' : 'eye-off',
-      label: muted ? t('projets.menu.nouveautes.afficher') : t('projets.menu.nouveautes.masquer'),
-      onSelect: () => {
-        projectActions.setProjectState(project.id, { mutedNews: !muted });
-        toast(muted ? t('projets.nouveautes.affichees') : t('projets.nouveautes.masquees'), { low: true });
-      },
-    } : null,
+  const items = {
+    open: () => ({ icon: 'kanban', label: t('projets.menu.ouvrir'), onSelect: () => navigate('project', { id: project.id }) }),
+    share: () => ({ icon: 'users', label: t('projets.menu.partager'), onSelect: () => openProjectShare(project.id) }),
+    people: () => ({ icon: 'users', label: t('projets.menu.personnes'), onSelect: () => openProjectShare(project.id) }),
+    settings: () => ({ icon: 'sliders', label: t('projets.menu.reglages'), onSelect: () => navigate('projectSettings', { id: project.id }) }),
+    duplicate: () => ({ icon: 'copy', label: t('projets.menu.dupliquer'), onSelect: () => duplicate(project) }),
+    cardTrash: () => ({ icon: 'trash', label: t('projets.menu.cartesSupprimees'), onSelect: () => navigate('projectTrash', { id: project.id }) }),
     // « Couper les notifications » de ce projet (page Notifications et
     // téléphone ; les rappels compris) : réglage à moi, indépendant des
     // nouveautés
-    {
+    push: () => ({
       icon: 'bell',
       label: pushMuted ? t('projets.menu.notifications.reactiver') : t('projets.menu.notifications.couper'),
       onSelect: () => {
         projectActions.setProjectState(project.id, { mutedPush: !pushMuted });
         toast(pushMuted ? t('projets.notifications.reactivees') : t('projets.notifications.coupees'), { low: true });
       },
-    },
-    // « Afficher dans Échéances » (étape 4, section 8) : interrupteur, coupé
-    // au départ, réglage à moi pour ce projet (jamais transmis aux autres) ;
-    // allumé, ses cartes datées et pas faites vont dans l'écran Échéances
-    {
+    }),
+    news: () => ({
+      icon: muted ? 'eye' : 'eye-off',
+      label: muted ? t('projets.menu.nouveautes.afficher') : t('projets.menu.nouveautes.masquer'),
+      onSelect: () => {
+        projectActions.setProjectState(project.id, { mutedNews: !muted });
+        toast(muted ? t('projets.nouveautes.affichees') : t('projets.nouveautes.masquees'), { low: true });
+      },
+    }),
+    // « Afficher dans Échéances » (section 8) : interrupteur, coupé au
+    // départ, réglage à moi pour ce projet (jamais transmis aux autres) ;
+    // allumé, ses cartes datées et pas faites vont dans l'écran Échéances.
+    // Absent quand l'option « Échéances » du projet est coupée (mon choix
+    // est gardé, il revient avec l'option)
+    deadlines: () => ({
       icon: 'calendar',
       label: t('projets.menu.echeances'),
       toggle: true,
@@ -108,11 +109,11 @@ export function projectMenuItems(project, { inside = false, onGone = () => {} } 
         projectActions.setProjectState(project.id, { inDeadlines: !inDeadlines });
         toast(inDeadlines ? t('projets.echeances.retire', { name: project.name }) : t('projets.echeances.ajoute', { name: project.name }), { low: true });
       },
-    },
-    rights.trash
-      ? { icon: 'trash', label: t('projets.menu.supprimer'), danger: true, separated: true, onSelect: () => askDelete(project, onGone) }
-      : { icon: 'logout', label: t('projets.menu.quitter'), danger: true, separated: true, onSelect: () => askLeave(project, onGone) },
-  ].filter(Boolean);
+    }),
+    delete: () => ({ icon: 'trash', label: t('projets.menu.supprimer'), danger: true, separated: true, onSelect: () => askDelete(project, onGone) }),
+    leave: () => ({ icon: 'logout', label: t('projets.menu.quitter'), danger: true, separated: true, onSelect: () => askLeave(project, onGone) }),
+  };
+  return projectMenuEntries(project, { inside }).map((entry) => items[entry]());
 }
 
 // Dupliquer (tout membre, Lecture seule compris ; décision du 25 novembre

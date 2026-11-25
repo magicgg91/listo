@@ -13,6 +13,7 @@
 import crypto from 'node:crypto';
 import { homeFromRow } from './home.js';
 import { featuresFromRow } from './features.js';
+import { accountRole } from '../public/js/access.js';
 
 // Noms des cookies de connexion : session, et connexion en attente du code
 // 2FA. En production (HTTPS), ils portent le préfixe « __Host- » : le
@@ -81,7 +82,8 @@ export function publicUser(user, config, { method = null } = {}) {
     id: user.id,
     username: user.username,
     displayName: user.display_name,
-    role: user.role,
+    // Rôle calculé (public/js/access.js) : 'admin', 'user' ou 'guest'
+    role: accountRole(user),
     totpEnabled: user.totp_enabled === 1,
     mustChangePassword: user.must_change_password === 1,
     productLookup: config?.productLookup !== false,
@@ -225,7 +227,7 @@ export function requirePasswordChanged(req, res, next) {
 
 // Refuse un compte qui n'est pas Admin (403)
 export function requireAdmin(req, res, next) {
-  if (req.user?.role !== 'admin') return res.status(403).json({ error: req.t('comptes.reserveAdmin') });
+  if (!req.user || accountRole(req.user) !== 'admin') return res.status(403).json({ error: req.t('comptes.reserveAdmin') });
   next();
 }
 

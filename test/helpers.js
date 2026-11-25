@@ -129,10 +129,17 @@ export function createClient(base, { origin = ORIGIN, ip } = {}) {
 }
 
 // Ajoute directement un compte en base (en attendant l'administration)
-export async function addUser(db, { username, password, role = 'user', active = 1 }) {
+// guest : 1 pour un compte « Invité » (docs/cadrage-comptes.md, migration 47)
+export async function addUser(db, { username, password, role = 'user', active = 1, guest = 0, displayName = username }) {
   const hash = await hashPassword(password);
-  return db.prepare('INSERT INTO users (username, display_name, password_hash, role, active) VALUES (?, ?, ?, ?, ?)')
-    .run(username, username, hash, role, active).lastInsertRowid;
+  // (sans la colonne guest pour un compte ordinaire : sert aussi aux bases
+  // d'avant la migration 47)
+  if (!guest) {
+    return db.prepare('INSERT INTO users (username, display_name, password_hash, role, active) VALUES (?, ?, ?, ?, ?)')
+      .run(username, displayName, hash, role, active).lastInsertRowid;
+  }
+  return db.prepare('INSERT INTO users (username, display_name, password_hash, role, active, guest) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(username, displayName, hash, role, active, guest).lastInsertRowid;
 }
 
 // Crée le premier Admin par la route /api/setup et renvoie son client connecté

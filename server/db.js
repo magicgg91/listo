@@ -1113,6 +1113,19 @@ export const MIGRATIONS = [
   `
   ALTER TABLE projects ADD COLUMN deadlines_enabled INTEGER NOT NULL DEFAULT 1 CHECK (deadlines_enabled IN (0, 1));
   `,
+
+  // --- Migration 47 : rôle « Invité » (25 novembre 2026,
+  // docs/cadrage-comptes.md, étape 1) ---
+  // users.guest : 1 pour un invité (toujours discret : absent de l'annuaire
+  // des autres sauf des Admin, annuaire vide). users.role garde ses deux
+  // valeurs ('admin', 'user') : une colonne ajoutée, sans recréer la table
+  // des comptes (que 43 tables référencent). La contrainte interdit
+  // « invité et Admin ». 0 pour tous les comptes existants : rien ne change
+  // pour eux. Le rôle se lit seulement par accountRole()
+  // (public/js/access.js).
+  `
+  ALTER TABLE users ADD COLUMN guest INTEGER NOT NULL DEFAULT 0 CHECK (guest IN (0, 1) AND (guest = 0 OR role = 'user'));
+  `,
 ];
 
 // Migration 45 (étape 3 des projets) : commentaires, cartes suivies, et la

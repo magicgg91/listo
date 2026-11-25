@@ -59,4 +59,7 @@ export default {
   // Corbeille indisponible (hors ligne)
   'corbeille.horsLigne.titre': 'Indisponible hors ligne',
   'corbeille.horsLigne.texte': 'La corbeille a besoin du réseau. Elle s\'affichera dès son retour.',
+  'corbeille.onglet.projets': 'Projets',
+  'corbeille.onglet.projets.nombre': { one: 'Projets ({count})', other: 'Projets ({count})' },
+  'corbeille.onglet.projets.label': { one: 'Projets, {count} projet supprimé', other: 'Projets, {count} projets supprimés' },
 };

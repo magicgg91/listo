@@ -59,10 +59,11 @@ const COLOR_NAMES = {
 const colorName = (color) => t(COLOR_NAMES[color]);
 
 // La pastille d'une étiquette (span), extra : enfant ajouté au début (la
-// coche du filtre)
-export function labelChip(label, { extra = null, role = null } = {}) {
+// coche du filtre) ; content : ce qui remplace le nom écrit (le nom en morceaux, la partie
+// trouvée marquée : recherche des réglages d'un projet)
+export function labelChip(label, { extra = null, role = null, content = null } = {}) {
   return h('span', { class: `label label--${LABEL_COLORS.includes(label.color) ? label.color : 'gris'}`, role },
-    extra, h('span', { class: 'label__name' }, label.name));
+    extra, h('span', { class: 'label__name' }, content ?? label.name));
 }
 
 // Rangée des étiquettes d'une carte ou d'une note : une liste (nommée

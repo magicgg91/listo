@@ -79,7 +79,7 @@ const LIST_SCREENS = ['lists', 'list', 'editList', 'newList', 'gifts'];
 // Écrans des notes : « Notes » mis en avant, « Nouvelle note » en bas
 export const NOTE_SCREENS = ['notes', 'note', 'newNote'];
 // Écrans des projets : « Projets » mis en avant, les projets dessous
-export const PROJECT_SCREENS = ['projects', 'project', 'projectCard', 'projectSettings', 'projectTrash'];
+export const PROJECT_SCREENS = ['projects', 'project', 'projectCard', 'projectSettings', 'projectSettingsTab', 'projectTrash'];
 // Écrans d'un projet ouvert (« Nouvelle carte » en bas du menu)
 const BOARD_SCREENS = ['project', 'projectCard'];
 

@@ -100,6 +100,8 @@ const MIGRATED = [
   'public/js/project-actions.js',
   'public/js/project-store.js',
   'public/js/projects.js',
+  // Réglages d'un projet en deux onglets (25 novembre 2026)
+  'public/js/project-settings-tabs.js',
 ];
 
 test('lecture des chaînes et repérage du texte : exemples', () => {

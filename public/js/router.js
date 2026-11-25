@@ -32,9 +32,13 @@ export const ROUTES = [
   { name: 'note', path: '/notes/:id' },
   // Projets (docs/cadrage-projets.md, 25 novembre 2026) : l'écran Projets,
   // un projet, une carte ouverte, les réglages d'un projet et ses cartes
-  // supprimées (fonction « Projets » coupée : app.js mène au premier écran)
+  // supprimées (fonction « Projets » coupée : app.js mène au premier écran).
+  // Réglages en deux onglets (25 novembre 2026, project-settings-tabs.js) :
+  // #/projets/<id>/reglages ouvre « Projet » (l'adresse d'avant les
+  // onglets) ; #/projets/<id>/reglages/etiquettes, « Étiquettes »
   { name: 'projects', path: '/projets' },
   { name: 'projectSettings', path: '/projets/:id/reglages' },
+  { name: 'projectSettingsTab', path: '/projets/:id/reglages/:tab' },
   { name: 'projectTrash', path: '/projets/:id/corbeille' },
   { name: 'projectCard', path: '/projets/:id/cartes/:cardId' },
   { name: 'project', path: '/projets/:id' },
@@ -160,9 +164,9 @@ export function navigate(name, params = {}, { replace = false } = {}) {
 }
 
 // Change l'adresse de l'écran affiché sans le redessiner ni ajouter
-// d'entrée à l'historique (onglets de la Corbeille) : le retour et
-// l'actualisation retrouvent l'onglet choisi, et le bouton Retour ne fait
-// pas le tour des onglets
+// d'entrée à l'historique (onglets de la Corbeille et des réglages d'un
+// projet) : le retour et l'actualisation retrouvent l'onglet choisi, et le
+// bouton Retour ne fait pas le tour des onglets
 export function replaceAddress(name, params = {}) {
   history.replaceState(history.state, '', pathFor(name, params));
 }

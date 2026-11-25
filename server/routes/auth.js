@@ -131,7 +131,16 @@ export function publicAuthRoutes(ctx) {
     // reçu plus haut exactement la réponse habituelle : rien ne distingue
     // ce compte tant que le mot de passe n'est pas le bon.
     // code : reconnu par l'écran de connexion (message sans champ en erreur)
-    if (!passwordLoginAllowed(user, ctx.config)) {
+    // Le compte est relu après le calcul du mot de passe (qui prend un peu de
+    // temps) : un Admin qui vient de le passer en « … seulement » ou de le
+    // désactiver pendant ce temps est pris en compte (sinon une session par
+    // mot de passe serait ouverte sur un état dépassé)
+    const current = findUser.get(username);
+    if (!current || current.active !== 1) {
+      audit('login_failure', { ...who, ip: req.ip });
+      return res.status(401).json({ error: req.t(BAD_LOGIN) });
+    }
+    if (!passwordLoginAllowed(current, ctx.config)) {
       audit('password_login_refused', { ...who, reason: 'account signs in with the identity provider only', ip: req.ip });
       return res.status(403).json({ error: req.t(SSO_ONLY, { provider: ctx.config.oidcName }), code: SSO_ONLY });
     }

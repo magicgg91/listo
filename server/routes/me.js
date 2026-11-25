@@ -77,6 +77,12 @@ export function meRoutes(ctx) {
     }
 
     const hash = await hashPassword(newPassword);
+    // Compte relu après les calculs du mot de passe : passé en « … seulement »
+    // ou désactivé entre-temps par un Admin, plus de mot de passe ni de session
+    const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    if (!fresh || fresh.active !== 1 || !passwordLoginAllowed(fresh, ctx.config)) {
+      return res.status(403).json({ error: req.t('comptes.fournisseur.gere', { provider: ctx.config.oidcName }) });
+    }
     db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(hash, req.user.id);
     revokeAllSessions(ctx, req.user.id, 'password changed');
     startSession(ctx, res, req.user.id);

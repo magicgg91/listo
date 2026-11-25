@@ -147,6 +147,33 @@ test('bon mot de passe : refusé (« Ce compte se connecte avec … »), sans se
   assert.equal((await login(browser, 'lea', 'MotDePasse-lea')).status, 429);
 });
 
+test('passage en « … seulement » pendant le calcul du mot de passe : ni session à la connexion, ni nouveau mot de passe', async (t) => {
+  const { app, admin, leaId } = await family(t);
+  const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  // Connexion lancée, puis l'Admin change le réglage pendant que le mot de
+  // passe est vérifié (calcul scrypt) : le compte est relu, rien n'est ouvert
+  const lea = app.client({ ip: '198.51.100.7' });
+  const pending = lea.post('/api/login', { username: 'lea', password: 'MotDePasse-lea' });
+  await pause(3);
+  assert.equal((await setSsoOnly(admin, leaId, true)).status, 200);
+  const res = await pending;
+  assert.equal(res.status, 403);
+  assert.equal(res.body.code, 'comptes.connexion.fournisseurSeulement');
+  assert.deepEqual(app.db.prepare('SELECT method FROM sessions WHERE user_id = ?').all(leaId), []);
+  // Changement de mot de passe lancé depuis une session par mot de passe,
+  // puis le réglage change pendant le calcul : refusé, rien d'écrit
+  assert.equal((await setSsoOnly(admin, leaId, false)).status, 200);
+  const lea2 = app.client({ ip: '198.51.100.8' });
+  assert.equal((await lea2.post('/api/login', { username: 'lea', password: 'MotDePasse-lea' })).status, 200);
+  const before = app.db.prepare('SELECT password_hash FROM users WHERE id = ?').pluck().get(leaId);
+  const change = lea2.post('/api/me/password', { currentPassword: 'MotDePasse-lea', newPassword: 'NouveauMotDePasse!2026' });
+  await pause(3);
+  assert.equal((await setSsoOnly(admin, leaId, true)).status, 200);
+  assert.equal((await change).status, 403);
+  assert.equal(app.db.prepare('SELECT password_hash FROM users WHERE id = ?').pluck().get(leaId), before);
+  assert.deepEqual(app.db.prepare("SELECT method FROM sessions WHERE user_id = ? AND method = 'password'").all(leaId), []);
+});
+
 test('connexion par mot de passe commencée avant le choix (code à 6 chiffres en attente) : arrêtée au code', async (t) => {
   const { app, admin, leaId } = await family(t);
   app.db.prepare("UPDATE users SET totp_enabled = 1, totp_secret = 'x' WHERE id = ?").run(leaId);

@@ -54,8 +54,8 @@ const journal = (app, event) => app.logs.filter((line) => line.includes('[journa
 
 test('migration 51 : une colonne sso_only, 0 au départ, 0 ou 1 seulement ; une base d\'avant migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 51);
-  assert.equal(schemaVersion(db), 51);
+  assert.equal(MIGRATIONS.length, 52);
+  assert.equal(schemaVersion(db), 52);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   assert.equal(db.prepare('SELECT sso_only FROM users WHERE id = ?').pluck().get(id), 0);
   assert.throws(() => db.prepare('UPDATE users SET sso_only = 2 WHERE id = ?').run(id), /CHECK/);
@@ -68,9 +68,9 @@ test('migration 51 : une colonne sso_only, 0 au départ, 0 ou 1 seulement ; une 
   old.close();
   const migrated = openDatabase(file);
   t.after(() => migrated.close());
-  assert.equal(schemaVersion(migrated), 51);
+  assert.equal(schemaVersion(migrated), 52);
   const after = migrated.prepare('SELECT * FROM users').all();
-  assert.deepEqual(after.map(({ sso_only, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ sso_only, deadlines_enabled, ...rest }) => rest), before);
   assert.deepEqual(after.map((user) => user.sso_only), [0]);
 });
 

@@ -103,17 +103,17 @@ test('migration 49 : lists_allowed et lists_enabled, 1 pour la famille, 0 pour u
   db.pragma('foreign_keys = ON');
   migrate(db);
   t.after(() => db.close());
-  assert.equal(MIGRATIONS.length, 51);
-  assert.equal(schemaVersion(db), 51);
+  assert.equal(MIGRATIONS.length, 52);
+  assert.equal(schemaVersion(db), 52);
   const after = db.prepare('SELECT * FROM users ORDER BY id').all();
-  assert.deepEqual(after.map(({ lists_allowed, lists_enabled, home_projects, home_project_id, sso_only, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ lists_allowed, lists_enabled, home_projects, home_project_id, sso_only, deadlines_enabled, ...rest }) => rest), before);
   assert.deepEqual(after.map((row) => [row.lists_allowed, row.lists_enabled]), [[1, 1], [1, 1], [0, 0]], 'invité déjà créé : listes non autorisées (le plus sûr)');
   for (const column of ['lists_allowed', 'lists_enabled']) {
     assert.throws(() => db.prepare(`UPDATE users SET ${column} = 2 WHERE id = 3`).run(), /CHECK/, column);
     assert.throws(() => db.prepare(`UPDATE users SET ${column} = NULL WHERE id = 3`).run(), /NOT NULL/, column);
   }
   migrate(db);
-  assert.equal(schemaVersion(db), 51);
+  assert.equal(schemaVersion(db), 52);
 });
 
 // --- Règles pures ---
@@ -133,8 +133,11 @@ test('règle : Listes toujours pour un Admin et un Utilisateur ; pour un invité
   assert.deepEqual(permissionsFor('admin'), []);
   assert.equal(defaultAllowed('guest').lists, false);
   // Réglages › Fonctions : la ligne « Listes » d'un invité seulement
-  assert.deepEqual(offeredFeatures({ lists: true, notes: true, projects: false }, 'guest'), ['lists', 'notes']);
-  assert.deepEqual(offeredFeatures({ lists: true, notes: true, projects: true }, 'user'), ['notes', 'projects']);
+  // (« Échéances », sans case de l'Admin : en tête, dès que les Listes ou
+  // les Projets sont là ; migration 52)
+  assert.deepEqual(offeredFeatures({ lists: true, notes: true, projects: false }, 'guest'), ['deadlines', 'lists', 'notes']);
+  assert.deepEqual(offeredFeatures({ lists: true, notes: true, projects: true }, 'user'), ['deadlines', 'notes', 'projects']);
+  assert.deepEqual(offeredFeatures({ lists: false, notes: true, projects: false }, 'guest'), ['notes']);
   // Un Utilisateur n'a pas d'interrupteur « Listes » ; un invité, s'il est autorisé
   assert.equal(featuresChangeProblem({ lists: false }, { lists: true, notes: true, projects: true }, 'user'), 'ops.fonctionInconnue');
   assert.equal(featuresChangeProblem({ lists: false }, { lists: true }, 'guest'), null);

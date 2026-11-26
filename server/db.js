@@ -1196,6 +1196,20 @@ export const MIGRATIONS = [
   `
   ALTER TABLE users ADD COLUMN sso_only INTEGER NOT NULL DEFAULT 0 CHECK (sso_only IN (0, 1));
   `,
+
+  // --- Migration 52 : « Échéances », une fonction qu'on peut désactiver
+  // (26 novembre 2026, décision du propriétaire, réponse A) ---
+  // users.deadlines_enabled : interrupteur « Échéances » de la personne
+  // (Réglages › Fonctions) : 1 = l'écran Échéances, son bouton, sa tuile,
+  // son entrée du menu de gauche et ses pastilles sont montrés ; 0 = rien
+  // de tout cela, rien n'est effacé. Un choix de la personne seulement :
+  // pas de case de l'Admin. Lu par server/features.js seulement, jamais
+  // pour les notifications (rappels et résumé du matin restent réglés dans
+  // Réglages › Notifications). 1 pour tous les comptes, existants et
+  // nouveaux, Admin, Utilisateur et Invité : rien ne change.
+  `
+  ALTER TABLE users ADD COLUMN deadlines_enabled INTEGER NOT NULL DEFAULT 1 CHECK (deadlines_enabled IN (0, 1));
+  `,
 ];
 
 // Migration 45 (étape 3 des projets) : commentaires, cartes suivies, et la

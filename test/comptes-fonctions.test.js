@@ -19,7 +19,7 @@ import { MIGRATIONS, migrate, schemaVersion } from '../server/db.js';
 import {
   PERMISSIONS, defaultAllowed, normalizeAllowed, allowedChangeProblem, applyAllowedChange, mayCreateProjects, deadlinesShown, welcomeHint,
 } from '../public/js/access.js';
-import { usedFeatures, featuresChangeProblem, screenFeatures, screenAllowed } from '../public/js/features.js';
+import { usedFeatures, featuresChangeProblem, screenFeatures, screenAllowed, PERSONAL_FEATURES } from '../public/js/features.js';
 import { tabScreens } from '../public/js/home-tiles.js';
 import { projectMenuEntries } from '../public/js/project-view.js';
 import { NOTES_NOT_ALLOWED as MCP_NOTES_NOT_ALLOWED } from '../server/mcp-notes.js';
@@ -113,7 +113,7 @@ test('fonction utilisée = autorisée ET allumée (les quatre cas, notes et proj
   for (const allowed of [true, false]) {
     for (const on of [true, false]) {
       const used = usedFeatures({ notes: on, projects: on }, { notes: allowed, projects: allowed });
-      assert.deepEqual(used, { lists: true, notes: allowed && on, projects: allowed && on }, `autorisée ${allowed}, allumée ${on}`);
+      assert.deepEqual(used, { deadlines: true, lists: true, notes: allowed && on, projects: allowed && on }, `autorisée ${allowed}, allumée ${on}`);
       // Listes : un invité seulement (un Utilisateur les a toujours)
       assert.equal(usedFeatures({ lists: on }, { lists: allowed }, 'guest').lists, allowed && on);
       assert.equal(usedFeatures({ lists: on }, { lists: allowed }, 'user').lists, true);
@@ -123,6 +123,18 @@ test('fonction utilisée = autorisée ET allumée (les quatre cas, notes et proj
   assert.equal(featuresChangeProblem({ projects: false }, { notes: true, projects: false }), 'ops.fonctionNonAutorisee');
   assert.equal(featuresChangeProblem({ notes: false }, { notes: true, projects: false }), null);
   assert.equal(featuresChangeProblem({ notes: false }), null, 'sans autorisations connues : comme avant');
+  // « Échéances » (migration 52) : pas de case de l'Admin ; l'interrupteur
+  // de la personne seulement, permis dès que les Listes ou les Projets sont
+  // autorisés (un Admin et un Utilisateur ont toujours les Listes)
+  for (const allowed of [true, false]) {
+    for (const on of [true, false]) assert.equal(usedFeatures({ deadlines: on }, { ...NONE, notes: allowed }, 'guest').deadlines, on, `invité ${allowed} ${on}`);
+  }
+  assert.equal(featuresChangeProblem({ deadlines: false }, { ...NONE, lists: true }, 'user'), null);
+  assert.equal(featuresChangeProblem({ deadlines: false }, { ...NONE, projects: true }, 'guest'), null);
+  assert.equal(featuresChangeProblem({ deadlines: false }, { ...NONE, notes: true }, 'guest'), 'ops.fonctionNonAutorisee', 'invité sans Listes ni Projets : rien à y voir');
+  assert.equal(featuresChangeProblem({ deadlines: 'non' }, ALL, 'user'), 'ops.fonctionsInvalides');
+  assert.deepEqual(PERSONAL_FEATURES, ['deadlines']);
+  assert.ok(!PERMISSIONS.includes('deadlines'), 'aucune case « Échéances » pour l\'Admin');
 });
 
 test('Échéances (décision 5) : toujours pour la famille ; pour un invité, ses Listes ou un projet à l\'option « Échéances » allumée', () => {
@@ -144,7 +156,16 @@ test('Échéances (décision 5) : toujours pour la famille ; pour un invité, se
   assert.equal(screenAllowed('deadlines', { deadlines: false }), false);
   assert.equal(screenAllowed('deadlines', {}), true);
   assert.deepEqual(tabScreens({ enabled: true }, { notes: false, projects: true, deadlines: false }), ['home', 'lists', 'projects', 'settings']);
-  assert.match(code('public/js/features.js'), /return \{ \.\.\.features, deadlines: deadlinesShown\(role, \{ lists: features\.lists, projectDeadlines \}\) \};/);
+  assert.match(code('public/js/features.js'), /return \{ \.\.\.features, deadlines: features\.deadlines && deadlinesShown\(role, \{ lists: features\.lists, projectDeadlines \}\) \};/);
+  // Interrupteur « Échéances » désactivé (Réglages › Fonctions, 26 novembre
+  // 2026) : l'écran n'est montré à personne, quelle que soit la règle
+  // d'un invité ; les deux à la fois pour un invité
+  const off = (data) => ({ ...data, features: { ...data.features, deadlines: false } });
+  for (const role of ['admin', 'user', 'guest']) {
+    assert.equal(screenFeatures(off(data(true)), role).deadlines, false, role);
+    assert.equal(screenFeatures(off(noLists(true)), role).deadlines, false, role);
+  }
+  assert.equal(screenFeatures(noLists(true), 'guest').deadlines, true, 'activée : la règle d\'un invité décide');
 });
 
 test('invitation de l\'Accueil : seulement quand aucune fonction n\'est utilisée ; nomme la seule fonction autorisée', () => {
@@ -170,16 +191,16 @@ test('migration 48 : quatre colonnes à 1 pour les comptes existants, 0 ou 1 seu
   db.pragma('foreign_keys = ON');
   migrate(db);
   t.after(() => db.close());
-  assert.equal(schemaVersion(db), 51);
-  assert.equal(MIGRATIONS.length, 51);
+  assert.equal(schemaVersion(db), 52);
+  assert.equal(MIGRATIONS.length, 52);
   const after = db.prepare('SELECT * FROM users ORDER BY id').all();
-  assert.deepEqual(after.map(({ notes_allowed, projects_allowed, projects_create, mcp_allowed, lists_allowed, lists_enabled, home_projects, home_project_id, sso_only, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ notes_allowed, projects_allowed, projects_create, mcp_allowed, lists_allowed, lists_enabled, home_projects, home_project_id, sso_only, deadlines_enabled, ...rest }) => rest), before);
   for (const user of after) assert.deepEqual([user.notes_allowed, user.projects_allowed, user.projects_create, user.mcp_allowed], [1, 1, 1, 1]);
   for (const column of ['notes_allowed', 'projects_allowed', 'projects_create', 'mcp_allowed']) {
     assert.throws(() => db.prepare(`UPDATE users SET ${column} = 2 WHERE id = 2`).run(), /CHECK/, column);
   }
   migrate(db);
-  assert.equal(schemaVersion(db), 51);
+  assert.equal(schemaVersion(db), 52);
 });
 
 test('nouveau compte : Utilisateur tout autorisé ; invité rien d\'autorisé ni d\'allumé ; cases choisies dans « Nouveau compte », allumées pour un invité ; journal', async (t) => {
@@ -190,12 +211,12 @@ test('nouveau compte : Utilisateur tout autorisé ; invité rien d\'autorisé ni
   const max = await addGuest(h, 'max', 'Max');
   assert.deepEqual(max.allowed, NONE);
   assert.deepEqual(row(h, 'max'), { notes_allowed: 0, projects_allowed: 0, projects_create: 0, mcp_allowed: 0, notes_enabled: 0, projects_enabled: 0 });
-  assert.deepEqual((await h.max.get('/api/me')).body.user.features, { lists: false, notes: false, projects: false });
+  assert.deepEqual((await h.max.get('/api/me')).body.user.features, { deadlines: true, lists: false, notes: false, projects: false }, '« Échéances » activée au départ, invité compris');
   assert.deepEqual(listsRow(h, 'max'), { lists_allowed: 0, lists_enabled: 0 });
   assert.deepEqual((await h.max.get('/api/me')).body.user.allowed, NONE);
   const ines = await addGuest(h, 'ines', 'Inès', { projects: true });
   assert.deepEqual(ines.allowed, { ...NONE, projects: true });
-  assert.deepEqual((await h.ines.get('/api/sync')).body.features, { lists: false, notes: false, projects: true }, 'cochés : allumés aussitôt');
+  assert.deepEqual((await h.ines.get('/api/sync')).body.features, { deadlines: true, lists: false, notes: false, projects: true }, 'cochés : allumés aussitôt');
   assert.deepEqual((await h.ines.get('/api/sync')).body.allowed, { ...NONE, projects: true });
   // Cases invalides : rien n'est créé
   const bad = await h.guillaume.post('/api/admin/users', { username: 'x.login', role: 'user', password: pass('x'), allowed: { lists: false } });
@@ -227,7 +248,7 @@ test('route des cases : Admin seulement ; invité allumé aussitôt, Utilisateur
   // Utilisateur : la case autorise seulement
   await ok(h.zoe, { type: 'account.features', notes: false });
   assert.equal((await setAllowed(h, 'zoe', { notes: false, projects: false })).status, 200);
-  assert.deepEqual((await h.zoe.get('/api/sync')).body.features, { lists: true, notes: false, projects: false });
+  assert.deepEqual((await h.zoe.get('/api/sync')).body.features, { deadlines: true, lists: true, notes: false, projects: false });
   assert.equal((await setAllowed(h, 'zoe', { notes: true, projects: true })).status, 200);
   assert.deepEqual(row(h, 'zoe'), { notes_allowed: 1, projects_allowed: 1, projects_create: 1, mcp_allowed: 1, notes_enabled: 0, projects_enabled: 0 }, 'interrupteurs de Zoé inchangés');
   // Un Admin : pas de cases ; valeurs invalides : refusées, rien d'écrit
@@ -276,7 +297,7 @@ test('projets : autorisés × allumés (synchronisation, opérations, routes) ; 
   assert.deepEqual([refused.status, refused.error], [403, fr['ops.projetsNonAutorises']]);
   assert.equal((await h.max.post(`/api/projects/${project}/leave`)).status, 403);
   assert.equal((await h.max.get(`/api/projects/${project}/cards/${uuid()}/history`)).status, 403);
-  assert.deepEqual((await h.max.get('/api/sync')).body.features, { lists: false, notes: false, projects: false });
+  assert.deepEqual((await h.max.get('/api/sync')).body.features, { deadlines: true, lists: false, notes: false, projects: false });
   // Rien n'est effacé : membre, cartes ; recochés, tout revient (allumés aussitôt)
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM project_members WHERE user_id = ?').pluck().get(h.ids.max), 1);
   assert.equal((await setAllowed(h, 'max', { projects: true })).status, 200);

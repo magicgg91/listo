@@ -103,7 +103,7 @@ export default {
           'Tapping the row opens the card. The box checks “Done” if you can edit the card ([[projets-roles]]): the card leaves the screen, and “Undo” brings it back. Otherwise, the row has no box.',
           '“Mine” keeps the cards assigned to you and the ones assigned to no one; “All”, all the dated cards of these projects.',
           'The numbers on “Due” (bottom bar, menu on the left), Home\'s “Due” tile and the morning summary count them too (the summary then says ‘2 items due today · 1 overdue’ and opens “Due”). A project whose notifications you turned off stays on the screen, but is not in the summary.',
-          'A card\'s reminder doesn\'t depend on this choice ([[projets-notifications]]). Projects disabled (Settings, “Features”): no cards in “Due”; the choice is kept for when you enable them again.',
+          'A card\'s reminder doesn\'t depend on this choice ([[projets-notifications]]). Projects disabled (Settings, “Features”): no cards in “Due”; the choice is kept for when you enable them again. “Due” disabled for you (Settings, “Features”: [[echeances]]): “Show in Due” is no longer in the ⋮ menu, and your choice is kept the same way.',
         ] },
       ],
     },

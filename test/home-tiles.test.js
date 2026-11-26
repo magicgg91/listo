@@ -114,8 +114,8 @@ test('disposition du téléphone : une tuile seule sur sa ligne prend toute la l
 
 test('migration 40 : trois colonnes sur users, valeurs de départ, contrôles ; une base d\'avant migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 51);
-  assert.equal(schemaVersion(db), 51);
+  assert.equal(MIGRATIONS.length, 52);
+  assert.equal(schemaVersion(db), 52);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   const row = db.prepare('SELECT home_enabled, home_start, home_tiles FROM users WHERE id = ?').get(id);
   assert.deepEqual(row, { home_enabled: 1, home_start: 'lists', home_tiles: null });
@@ -132,7 +132,7 @@ test('migration 40 : trois colonnes sur users, valeurs de départ, contrôles ; 
   old.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('paul', 'Paul', 'x', 'user')").run();
   old.close();
   const migrated = openDatabase(file);
-  assert.equal(schemaVersion(migrated), 51);
+  assert.equal(schemaVersion(migrated), 52);
   assert.deepEqual(homeFromRow(migrated.prepare("SELECT * FROM users WHERE username = 'paul'").get()), defaultHome());
   migrated.close();
 });

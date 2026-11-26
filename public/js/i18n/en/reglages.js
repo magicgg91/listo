@@ -71,10 +71,12 @@ export default {
 
   // Réglages › Fonctions (screens/features.js ; features.js)
   'reglages.fonctions': 'Features',
-  'reglages.fonctions.detail': 'Notes, Projects',
+  'reglages.fonctions.detail': 'Due, Notes, Projects',
   'reglages.fonctions.intro': 'Choose the features you use. A disabled feature disappears from your screens; nothing is deleted.',
+  'reglages.fonctions.echeances': 'Due',
+  'reglages.fonctions.echeances.detail': 'The screen of dated tasks and cards. Reminders stay set in Notifications.',
   'reglages.fonctions.listes': 'Lists',
-  'reglages.fonctions.listes.detail': 'Shopping, tasks and wishes, with Due and “To give”.',
+  'reglages.fonctions.listes.detail': 'Shopping, tasks and wishes, with “To give”.',
   'reglages.fonctions.notes': 'Notes',
   'reglages.fonctions.notes.detail': 'Free-form texts, to keep for yourself or to share.',
   'reglages.fonctions.projets': 'Projects',
@@ -83,13 +85,15 @@ export default {
   // Features allowed by the Admin (docs/cadrage-comptes.md, step 2)
   'reglages.fonctions.note.autorisees': 'Only the features the Admin allowed for your account are offered. Applies to all your devices.',
   'reglages.fonctions.aucune': 'No feature is open for your account yet: the Admin takes care of it.',
+  'reglages.fonctions.detail.echeances': 'Due',
+  'reglages.fonctions.detail.echeancesNotes': 'Due, Notes',
+  'reglages.fonctions.detail.echeancesProjets': 'Due, Projects',
   'reglages.fonctions.detail.notes': 'Notes',
-  'reglages.fonctions.detail.projets': 'Projects',
   'reglages.fonctions.detail.aucune': 'None for now',
-  'reglages.fonctions.detail.listes': 'Lists',
-  'reglages.fonctions.detail.listesNotes': 'Lists, Notes',
-  'reglages.fonctions.detail.listesProjets': 'Lists, Projects',
-  'reglages.fonctions.detail.tout': 'Lists, Notes, Projects',
+  'reglages.fonctions.detail.listes': 'Due, Lists',
+  'reglages.fonctions.detail.listesNotes': 'Due, Lists, Notes',
+  'reglages.fonctions.detail.listesProjets': 'Due, Lists, Projects',
+  'reglages.fonctions.detail.tout': 'Due, Lists, Notes, Projects',
 
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Single-key shortcuts enabled',

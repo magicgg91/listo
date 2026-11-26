@@ -71,10 +71,13 @@ export default {
 
   // Réglages › Fonctions (screens/features.js ; features.js)
   'reglages.fonctions': 'Fonctions',
-  'reglages.fonctions.detail': 'Notes, Projets',
+  'reglages.fonctions.detail': 'Échéances, Notes, Projets',
   'reglages.fonctions.intro': 'Choisissez les fonctions que vous utilisez. Une fonction désactivée disparaît de vos écrans ; rien n\'est effacé.',
+  // « Échéances » (26 novembre 2026, migration 52 : sans case de l'Admin)
+  'reglages.fonctions.echeances': 'Échéances',
+  'reglages.fonctions.echeances.detail': 'L\'écran des tâches et des cartes datées. Les rappels restent réglés dans Notifications.',
   'reglages.fonctions.listes': 'Listes',
-  'reglages.fonctions.listes.detail': 'Courses, tâches et envies, avec Échéances et « À offrir ».',
+  'reglages.fonctions.listes.detail': 'Courses, tâches et envies, avec « À offrir ».',
   'reglages.fonctions.notes': 'Notes',
   'reglages.fonctions.notes.detail': 'Des textes libres, à garder pour soi ou à partager.',
   'reglages.fonctions.projets': 'Projets',
@@ -83,13 +86,15 @@ export default {
   // Fonctions autorisées par l'Admin (docs/cadrage-comptes.md, étape 2)
   'reglages.fonctions.note.autorisees': 'Seules les fonctions que l\'Admin a autorisées pour votre compte sont proposées. Vaut pour tous vos appareils.',
   'reglages.fonctions.aucune': 'Aucune fonction n\'est encore ouverte pour votre compte : l\'Admin s\'en charge.',
+  'reglages.fonctions.detail.echeances': 'Échéances',
+  'reglages.fonctions.detail.echeancesNotes': 'Échéances, Notes',
+  'reglages.fonctions.detail.echeancesProjets': 'Échéances, Projets',
   'reglages.fonctions.detail.notes': 'Notes',
-  'reglages.fonctions.detail.projets': 'Projets',
   'reglages.fonctions.detail.aucune': 'Aucune pour l\'instant',
-  'reglages.fonctions.detail.listes': 'Listes',
-  'reglages.fonctions.detail.listesNotes': 'Listes, Notes',
-  'reglages.fonctions.detail.listesProjets': 'Listes, Projets',
-  'reglages.fonctions.detail.tout': 'Listes, Notes, Projets',
+  'reglages.fonctions.detail.listes': 'Échéances, Listes',
+  'reglages.fonctions.detail.listesNotes': 'Échéances, Listes, Notes',
+  'reglages.fonctions.detail.listesProjets': 'Échéances, Listes, Projets',
+  'reglages.fonctions.detail.tout': 'Échéances, Listes, Notes, Projets',
 
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Raccourcis à une touche activés',

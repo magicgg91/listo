@@ -74,7 +74,11 @@ export const projectMatches = (project, query) => !isSearching(query) || matches
 // canCreate : faux sans « Peut créer ses propres projets » (case de
 // l'Admin, docs/cadrage-comptes.md, étape 2) : dupliquer crée un projet,
 // « Dupliquer le projet » n'est pas proposé
-export function projectMenuEntries(project, { inside = false, canShare = true, canCreate = true } = {}) {
+// deadlinesScreen : faux quand l'écran « Échéances » n'est pas montré à la
+// personne (fonction désactivée dans Réglages › Fonctions, 26 novembre
+// 2026 ; app.js, shownFeatures) : pas d'« Afficher dans Échéances » (son
+// choix, project_user_state.in_deadlines, est gardé)
+export function projectMenuEntries(project, { inside = false, canShare = true, canCreate = true, deadlinesScreen = true } = {}) {
   const rights = projectRights(project?.role);
   if (!rights.view) return [];
   const shared = (project.members ?? []).length > 1;
@@ -86,7 +90,7 @@ export function projectMenuEntries(project, { inside = false, canShare = true, c
     'cardTrash',
     'push',
     shared ? 'news' : null,
-    deadlinesOn(project) ? 'deadlines' : null,
+    deadlinesOn(project) && deadlinesScreen ? 'deadlines' : null,
     rights.trash ? 'delete' : 'leave',
   ].filter(Boolean);
 }

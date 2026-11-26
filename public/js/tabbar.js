@@ -35,9 +35,12 @@
 // « Notes » (quatre boutons, ou trois si l'Accueil est aussi coupé ; la
 // pastille de base de listo.css fait un tiers). Projets coupés (c'est le
 // départ) : pas de bouton « Projets » ; notes coupées et projets allumés :
-// « Projets » prend la place de « Notes » (cinq). Le bandeau suit ces
-// réglages dès qu'ils changent (sur cet appareil ou sur un autre), sans
-// être refait.
+// « Projets » prend la place de « Notes » (cinq). « Échéances » désactivée
+// (Réglages › Fonctions, 26 novembre 2026) : sans « Échéances » ni ses
+// pastilles, un bouton de moins dans chaque cas (de six à deux : la
+// pastille de .tabbar--2 fait une moitié, section 16.54 de listo.css). Le
+// bandeau suit ces réglages dès qu'ils changent (sur cet appareil ou sur
+// un autre), sans être refait.
 
 import { h, icon, replace } from './dom.js';
 import { navigate, goBack } from './router.js';

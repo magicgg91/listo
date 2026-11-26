@@ -141,6 +141,12 @@ export function adminUserRoutes(ctx) {
   // pas devenir invité tant qu'il y en a (règles des réservations)
   const wishListsFor = db.prepare('SELECT COUNT(*) FROM lists WHERE for_user_id = ?').pluck();
 
+  // Fonctions utilisées d'un compte, telles que l'Admin les voit : Listes,
+  // Notes, Projets (pas l'interrupteur « Échéances », personnel)
+  const usedByAdminView = (user) => {
+    const { deadlines: _personal, ...used } = featuresFromRow(user);
+    return used;
+  };
   // Ce qu'un Admin voit d'un compte : jamais d'empreinte, de secret ni de liste
   const describe = (user) => ({
     id: user.id,
@@ -151,8 +157,10 @@ export function adminUserRoutes(ctx) {
     // Fonctions autorisées par l'Admin (un Admin a tout)…
     allowed: allowedFromRow(user),
     // … et celles qu'il utilise (autorisées et allumées) : la confirmation
-    // « Faire un invité » dit ce qu'il garde (décision du 25 novembre 2026)
-    used: featuresFromRow(user),
+    // « Faire un invité » dit ce qu'il garde (décision du 25 novembre 2026).
+    // Sans « Échéances » : un choix de la personne seule, sans case de
+    // l'Admin (migration 52), qu'il n'a pas à connaître
+    used: usedByAdminView(user),
     active: user.active === 1,
     totpEnabled: user.totp_enabled === 1,
     mustChangePassword: user.must_change_password === 1,

@@ -1,6 +1,8 @@
 // Réglage « Fonctions » d'un compte (Réglages › Fonctions, migration 41) :
 // les fonctions de Listo qu'une personne peut couper pour elle seule (les
-// notes ; les projets depuis le 25 novembre 2026, coupés au départ). Le
+// notes ; les projets depuis le 25 novembre 2026, coupés au départ ;
+// « Échéances » depuis le 26 novembre 2026, migration 52, activée au
+// départ, sans case de l'Admin). Le
 // même sur tous les appareils de la personne : envoyé avec /api/me et
 // chaque synchronisation (/api/sync, « features »), modifié par l'opération « account.features » (/api/ops, file d'attente :
 // hors ligne compris).
@@ -30,6 +32,12 @@
 // Projets non utilisés : server/projects.js relit ces colonnes à chaque
 // opération et à chaque synchronisation (rien d'envoyé, tout refusé).
 //
+// « Échéances » (migration 52, deadlines_enabled) : l'écran seulement,
+// calculé sur le téléphone (aucune route de données ici) : le serveur garde
+// et synchronise l'interrupteur, rien d'autre. Les notifications ne le
+// lisent PAS (réponse A du propriétaire, 26 novembre 2026) : rappels et
+// résumé du matin restent réglés dans Réglages › Notifications.
+//
 // Listes (docs/cadrage-comptes.md, étape 3, migration 49 : lists_allowed,
 // lists_enabled) : toujours utilisées par un Admin et un Utilisateur ;
 // pour un invité, autorisées ET allumées. Un invité sans Listes ne reçoit
@@ -39,11 +47,11 @@
 // notifications, page Notifications, temps réel, assistants IA).
 
 import { FEATURES, normalizeFeatures, featuresChangeProblem, applyFeaturesChange, usedFeatures } from '../public/js/features.js';
-import { accountRole, normalizeAllowed, PERMISSIONS, allowedChangeProblem, applyAllowedChange, mayShareOwn } from '../public/js/access.js';
+import { accountRole, normalizeAllowed, PERMISSIONS, SWITCHED_PERMISSIONS, allowedChangeProblem, applyAllowedChange, mayShareOwn } from '../public/js/access.js';
 
 // Colonne de la table users de chaque fonction (liste fixe : jamais un nom
 // venu d'une requête) : l'interrupteur de la personne…
-const COLUMNS = { lists: 'lists_enabled', notes: 'notes_enabled', projects: 'projects_enabled' };
+const COLUMNS = { deadlines: 'deadlines_enabled', lists: 'lists_enabled', notes: 'notes_enabled', projects: 'projects_enabled' };
 // … et la case de l'Admin (migrations 48 et 49)
 export const ALLOWED_COLUMNS = { lists: 'lists_allowed', notes: 'notes_allowed', projects: 'projects_allowed', projectsCreate: 'projects_create', mcp: 'mcp_allowed' };
 
@@ -156,8 +164,8 @@ export function createFeatures(db) {
     return refusal ? { status: 403, key: refusal } : null;
   }
 
-  // Modifie le réglage de la personne. change : { lists?, notes?, projects? },
-  // rien d'autre (« Listes » : un invité seulement).
+  // Modifie le réglage de la personne. change : { deadlines?, lists?,
+  // notes?, projects? }, rien d'autre (« Listes » : un invité seulement).
   // Renvoie { problem, status } (nom du texte de refus) si la modification
   // n'est pas valable (rien n'est écrit), sinon { changed }. Une fonction
   // que l'Admin n'a pas autorisée : refus 403 (elle n'est pas proposée).
@@ -203,12 +211,13 @@ export function createFeatures(db) {
   // Cases de départ d'un compte qui vient d'être créé (access.js,
   // defaultAllowed, ou celles choisies dans « Nouveau compte ») ; pour un
   // invité, les fonctions cochées sont allumées, les autres éteintes (rien
-  // n'est allumé tant que l'Admin n'a rien coché)
+  // n'est allumé tant que l'Admin n'a rien coché). « Échéances », sans
+  // case, garde sa valeur de départ (activée), pour un invité aussi.
   function initAllowed(userId, allowed, role) {
     const value = normalizeAllowed(allowed, role);
     db.transaction(() => {
       for (const name of PERMISSIONS) allowedWrites[name].run(value[name] ? 1 : 0, userId);
-      if (role === 'guest') for (const name of FEATURES) writes[name].run(value[name] ? 1 : 0, userId);
+      if (role === 'guest') for (const name of SWITCHED_PERMISSIONS) writes[name].run(value[name] ? 1 : 0, userId);
     })();
     return value;
   }

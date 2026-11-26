@@ -2031,6 +2031,13 @@ span.nf-task__box::after { display: none; }
 .app--pc .kset__labels .label-row:last-child { border-bottom: 1px solid var(--color-border); }
 .app--pc .kset--labels .label-row--add:not(:last-child) { border-bottom: 1px solid var(--color-border); }
 
+/* 16.54 Bandeau du bas à deux boutons (décision du propriétaire du 26
+   novembre 2026 : « Échéances » se désactive dans Réglages › Fonctions) :
+   avec l'Accueil, les Notes et les Projets désactivés aussi, il ne reste
+   que « Listes » et « Réglages ». Pastille sur deux places (data-current =
+   0 ou 1, déjà prévus par la base) ; boutons comme la base. */
+.tabbar--2 .tabbar__pill { width: calc((100% - 10px) / 2); }
+
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }
 .stage__row[data-theme="dark"] { --stage: #060A12; }

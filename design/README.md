@@ -604,3 +604,7 @@ Cadrage `docs/cadrage-projets.md`, maquettes `design/projets/` (référence de c
 - **16.45** choix du droit à trois options sous la personne : `.share__person--3`, `.share__access--3`, `.share-roles`.
 - **16.46** détails d'une carte (étape 2) : repères de la face (`.kcard__meta`, `.due--done`, `.kcount--all`), personnes (`.kfield__person`), échéance sur une ligne (`.kdue`, `.kdone`, `.kdue__date`, `.kdue__remind`), priorité (`.kprio`), description (`.kc__block`, `.kc__desc`, `.kc__check`), liens (`.klink`, `.klink--add`), filtre du téléphone (`.kfilter__labels`, `.kfilter__rule`), `.pfilter .avatar`.
 - **16.47** commentaires et historique d'une carte (étape 3) : onglets (`.tabs` du kit), `.kc__panel`, `.kcomments`, `.kcomment` (`--imported` : bulle en pointillés), `.kcomment__acts`, `.khist`, écrire (`.kc__compose` : barre en verre du téléphone ; `.kcompose` sur ordinateur), point des nouveautés dans le titre d'une tuile (`.tile__head .tile__dot`).
+
+## Ajout : bandeau du bas à deux boutons (26 novembre 2026)
+
+- **16.54** `.tabbar--2` : pastille sur deux places, quand il ne reste que « Listes » et « Réglages » (Accueil, Échéances, Notes et Projets désactivés : « Échéances » se désactive dans Réglages › Fonctions depuis le 26 novembre 2026).

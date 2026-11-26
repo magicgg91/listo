@@ -26,7 +26,7 @@ import { h, icon, iconButton, avatar, replace, field, errorNote } from '../dom.j
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList, todayKey } from '../format.js';
 import { nowTime } from '../due-time.js';
-import { app, onDataChange, refreshData, isDesktop, canCreateProjects } from '../app.js';
+import { app, onDataChange, refreshData, isDesktop, canCreateProjects, shownFeatures } from '../app.js';
 import { mayShareOwn } from '../access.js';
 import { syncPill, toast, drawWhenIdle, openMenu, openSheet, confirmDialog, offlineBanner, onPc } from '../ui.js';
 import { topBell } from '../bell.js';
@@ -63,7 +63,8 @@ export function roleLabel(role) {
 // modifier »), Dupliquer le projet (tout membre), Cartes supprimées, Couper
 // / Réactiver les notifications, Masquer / Afficher les nouveautés (projet
 // partagé), « Afficher dans Échéances » (interrupteur à moi, seulement
-// quand l'option « Échéances » du projet est allumée) ; après un trait,
+// quand l'option « Échéances » du projet est allumée et que l'écran
+// « Échéances » m'est montré : Réglages › Fonctions) ; après un trait,
 // Supprimer (propriétaire) ou Quitter le projet.
 // Seulement ce que mon rôle permet ; le serveur revérifie chaque droit.
 export function projectMenuItems(project, { inside = false, onGone = () => {} } = {}) {
@@ -114,7 +115,7 @@ export function projectMenuItems(project, { inside = false, onGone = () => {} } 
     delete: () => ({ icon: 'trash', label: t('projets.menu.supprimer'), danger: true, separated: true, onSelect: () => askDelete(project, onGone) }),
     leave: () => ({ icon: 'logout', label: t('projets.menu.quitter'), danger: true, separated: true, onSelect: () => askLeave(project, onGone) }),
   };
-  return projectMenuEntries(project, { inside, canShare: mayShareOwn(app.user?.role), canCreate: canCreateProjects() }).map((entry) => items[entry]());
+  return projectMenuEntries(project, { inside, canShare: mayShareOwn(app.user?.role), canCreate: canCreateProjects(), deadlinesScreen: shownFeatures().deadlines }).map((entry) => items[entry]());
 }
 
 // Dupliquer (tout membre, Lecture seule compris ; décision du 25 novembre

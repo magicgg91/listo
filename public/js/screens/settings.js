@@ -17,6 +17,7 @@ import { aboutVersion } from '../format.js';
 import { toast, onPc } from '../ui.js';
 import { singleKeysOn, setSingleKeys, openShortcuts } from '../shortcuts.js';
 import { t } from '../i18n.js';
+import { offeredFeatures } from '../features.js';
 
 const MIN_PASSWORD = 10;
 
@@ -117,18 +118,17 @@ export function renderSettings() {
 // administration (compte Admin seulement). « Fonctions »
 // (features.js, 24 novembre 2026) suit « Accueil ».
 const homeRow = () => row({ iconName: 'home', title: t('reglages.accueil'), sub: t('reglages.accueil.detail'), onClick: () => navigate('homeSettings') });
-// Sous « Fonctions » : celles que l'Admin autorise à ce compte (« Notes,
-// Projets », « Projets »… ; docs/cadrage-comptes.md, étape 2)
+// Sous « Fonctions » : celles qui y sont proposées à ce compte (« Échéances,
+// Notes, Projets », « Échéances, Projets »… ; features.js, offeredFeatures :
+// les fonctions que l'Admin autorise, docs/cadrage-comptes.md, étape 2, et
+// « Échéances », sans case, dès que les Listes ou les Projets sont là)
 // (« Listes » nommées pour un invité seulement : les autres les ont toujours)
 const FEATURE_DETAIL = {
-  'notes,projects': 'reglages.fonctions.detail', notes: 'reglages.fonctions.detail.notes', projects: 'reglages.fonctions.detail.projets', '': 'reglages.fonctions.detail.aucune',
-  lists: 'reglages.fonctions.detail.listes', 'lists,notes': 'reglages.fonctions.detail.listesNotes', 'lists,projects': 'reglages.fonctions.detail.listesProjets', 'lists,notes,projects': 'reglages.fonctions.detail.tout',
+  'deadlines,notes,projects': 'reglages.fonctions.detail', 'deadlines,notes': 'reglages.fonctions.detail.echeancesNotes', 'deadlines,projects': 'reglages.fonctions.detail.echeancesProjets', deadlines: 'reglages.fonctions.detail.echeances',
+  notes: 'reglages.fonctions.detail.notes', '': 'reglages.fonctions.detail.aucune',
+  'deadlines,lists': 'reglages.fonctions.detail.listes', 'deadlines,lists,notes': 'reglages.fonctions.detail.listesNotes', 'deadlines,lists,projects': 'reglages.fonctions.detail.listesProjets', 'deadlines,lists,notes,projects': 'reglages.fonctions.detail.tout',
 };
-const featuresDetail = () => {
-  const allowed = allowedNow();
-  const names = app.user?.role === 'guest' ? ['lists', 'notes', 'projects'] : ['notes', 'projects'];
-  return t(FEATURE_DETAIL[names.filter((name) => allowed[name]).join(',')]);
-};
+const featuresDetail = () => t(FEATURE_DETAIL[offeredFeatures(allowedNow(), app.user?.role).join(',')]);
 const featuresRow = () => row({ iconName: 'layers', title: t('reglages.fonctions'), sub: featuresDetail(), onClick: () => navigate('features') });
 function generalRows(isAdmin) {
   return [

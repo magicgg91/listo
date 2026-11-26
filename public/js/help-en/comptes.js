@@ -61,6 +61,7 @@ export default {
           "“AI assistants”: without it, the person can't connect an AI assistant ([[claude-connecter]]), and their connections are disconnected right away.",
           "Note labels are shared by the household: a guest who has notes sees them.",
           "An Admin has access to everything: their page has no ticks.",
+          "“Due” has no tick: everyone enables or disables it for themselves in Settings, “Features” (enabled at first, for a guest too; offered as soon as they have lists or projects); the Admin doesn't see this choice.",
         ] },
         { sub: "Changing an account's role" },
         { ul: [
